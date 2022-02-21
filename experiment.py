@@ -8,10 +8,10 @@ from data import get_dataloader
 
 """
 Config:
-	- model (UNet / UNetInception)
 	- num_epochs
 	- working_folder
 	- model
+		- type (UNet / UNetInception)
 		- in_channels
 	- optimizer
 		- lr
@@ -27,7 +27,7 @@ def run_experiment(config_filepath):
 		config = yaml.load(f, Loader=yaml.FullLoader)
 	experiment_name, _ = os.path.splitext(os.path.basename(config_filepath))
 
-	if config["model"] == "UNet":
+	if config["model"]["type"] == "UNet":
 		model = UNet(config["model"]["in_channels"], 1)
 	else:
 		model = UNetInception(config["model"]["in_channels"], 1)
@@ -45,3 +45,6 @@ def run_experiment(config_filepath):
 	                  config["working_folder"])
 
 	trainer.train()
+
+if __name__ == '__main__':
+	run_experiment("initial.yml")
