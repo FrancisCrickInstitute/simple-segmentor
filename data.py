@@ -40,14 +40,14 @@ class ImageFolder(data.Dataset):
 		start_coords = rng.integers((0, 0), max_coords_for_patch_start, endpoint=True)
 		image_patch = self.image_stack[...,
 					  idx * self.patch_shape[0] : idx * self.patch_shape[0] + self.patch_shape[0],
-					  start_coords[1] : start_coords[1] + self.patch_shape[1],
-					  start_coords[2]: start_coords[2] + self.patch_shape[2],
+					  start_coords[0] : start_coords[0] + self.patch_shape[1],
+					  start_coords[1]: start_coords[1] + self.patch_shape[2],
 		]
 
 		label_patch = self.label_stack[...,
 		              idx * self.patch_shape[0]: idx * self.patch_shape[0] + self.patch_shape[0],
-		              start_coords[1]: start_coords[1] + self.patch_shape[1],
-		              start_coords[2]: start_coords[2] + self.patch_shape[2],
+		              start_coords[0]: start_coords[0] + self.patch_shape[1],
+		              start_coords[1]: start_coords[1] + self.patch_shape[2],
 		              ]
 
 		return image_patch, label_patch
