@@ -1,4 +1,3 @@
-import torch
 import numpy as np
 import torch.utils.data as data
 import os
@@ -16,55 +15,42 @@ class ImageFolder(data.Dataset):
 		self.patch_shape = (12, 256, 256)
 
 		self.img_dir = img_dir
-		self.image_stacks = []
 		for file in os.listdir(self.img_dir):
 			if os.path.isfile(file):
 				filename, ext = os.path.splitext(file)
 				if ext == 'tiff' or ext == 'tif':
-					self.image_stacks.append(imread(os.path.join(self.img_dir, file)))
+					self.image_stack = imread(os.path.join(self.img_dir, file))
+					break
 
 		self.label_dir = label_dir
-		self.label_stacks = []
 		for file in os.listdir(self.label_dir):
 			if os.path.isfile(file):
 				filename, ext = os.path.splitext(file)
 				if ext == 'tiff' or ext == 'tif':
-					self.label_stacks.append(imread(os.path.join(self.label_dir, file)))
+					self.label_stack = imread(os.path.join(self.label_dir, file))
+					break
 
 	def __getitem__(self, idx):
-		img_patch = np.zeros(*self.patch_shape)
-		label_patch = np.zeros(*self.patch_shape)
+		rng = np.random.default_rng()
 
-		image_stack = self.image_stacks[idx]
-		label_stack = self.label_stack[idx]
+		max_coords_for_patch_start = (
+			self.image_stack.shape[1] - self.patch_shape[1],
+			self.image_stack.shape[2] - self.patch_shape[2]
+		)
+		start_coords = rng.integers((0, 0), max_coords_for_patch_start, endpoint=True)
+		image_patch = self.image_stack[...,
+					  idx * self.patch_shape[0] : idx * self.patch_shape[0] + self.patch_shaep[0],
+					  start_coords[1] : start_coords[1] + self.patch_shape[1],
+					  start_coords[2]: start_coords[2] + self.patch_shape[2],
+		]
 
-		image_patch, label_patch = random_patches_from_stacks(image_stack,
-		                                                    label_stack,
-		                                                    self.patch_shape)
+		label_patch = self.label_stack[...,
+		              idx * self.patch_shape[0]: idx * self.patch_shape[0] + self.patch_shaep[0],
+		              start_coords[1]: start_coords[1] + self.patch_shape[1],
+		              start_coords[2]: start_coords[2] + self.patch_shape[2],
+		              ]
+
 		return image_patch, label_patch
 
 	def __len__(self):
-		return len(self.image_stacks)
-
-
-def random_patches_from_stacks(image_stack, label_stack, patch_shape):
-	rng = np.random.default_rng()
-
-	image_patches = np.zeros(*patch_shape)
-
-	max_coords_for_patch_start = (
-		image_stack.shape[0] - patch_shape[0],
-		image_stack.shape[1] - patch_shape[1],
-		image_stack.shape[2] - patch_shape[2]
-	)
-	start_coords = rng.integers((0, 0, 0), max_coords_for_patch_start, endpoint=True)
-	image_patch = image_stack[...,
-					start_coords[0]:start_coords[0] + patch_shape[0],
-	                start_coords[1]:start_coords[1] + patch_shape[1],
-	                start_coords[2]: start_coords[2] + patch_shape[2]]
-	label_patch = label_stack[...,
-	              start_coords[0]:start_coords[0] + patch_shape[0],
-	              start_coords[1]:start_coords[1] + patch_shape[1],
-	              start_coords[2]: start_coords[2] + patch_shape[2]]
-
-	return image_patch, label_patch
+		return self.image_stack.shape[0] // self.patch_shape[0]
