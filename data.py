@@ -16,7 +16,7 @@ class ImageFolder(data.Dataset):
 
 		self.img_dir = img_dir
 		for file in os.listdir(self.img_dir):
-			if os.path.isfile(file):
+			if os.path.isfile(os.path.join(self.img_dir, file)):
 				filename, ext = os.path.splitext(file)
 				if ext == 'tiff' or ext == 'tif':
 					self.image_stack = imread(os.path.join(self.img_dir, file))
@@ -24,7 +24,7 @@ class ImageFolder(data.Dataset):
 
 		self.label_dir = label_dir
 		for file in os.listdir(self.label_dir):
-			if os.path.isfile(file):
+			if os.path.isfile(os.path.join(self.label_dir, file)):
 				filename, ext = os.path.splitext(file)
 				if ext == 'tiff' or ext == 'tif':
 					self.label_stack = imread(os.path.join(self.label_dir, file))
