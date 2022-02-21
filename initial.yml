@@ -1,0 +1,15 @@
+num_epochs: 10
+
+working_folder: experiments/initial
+
+model:
+	type: UNet
+	in_channels: 12
+
+optimizer:
+	lr: 1e-4
+
+data:
+	img_dir: data/images
+	label_dir: data/labels
+	batch_size: 4
