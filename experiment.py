@@ -27,12 +27,12 @@ def run_experiment(config_filepath):
 		config = yaml.load(f, Loader=yaml.FullLoader)
 	experiment_name, _ = os.path.splitext(os.path.basename(config_filepath))
 
-	if config["model"]["type"] == "UNet":
-		model = UNet(int(config["model"]["in_channels"]), 1)
-	else:
-		model = UNetInception(int(config["model"]["in_channels"]), 1)
-
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+	if config["model"]["type"] == "UNet":
+		model = UNet(int(config["model"]["in_channels"]), 1).to(device)
+	else:
+		model = UNetInception(int(config["model"]["in_channels"]), 1).to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=float(config["optimizer"]["lr"]))
 
 	dataloader = get_dataloader(config["data"]["img_dir"],
