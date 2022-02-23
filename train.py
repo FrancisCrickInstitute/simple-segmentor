@@ -61,7 +61,7 @@ class Trainer:
 		for self.epoch in range(self.epoch + 1, self.epoch + self.n_epochs + 1):
 			running_loss = 0
 			# _train_one_epoch, get loss, cpu_time, gpu_time
-			for x_batch, y_batch in tqdm(self.dataloader, desc=f"Epoch {self.epoch + 1}", total=self.steps_per_epoch):
+			for x_batch, y_batch in self.dataloader:
 				# Add timing stuff
 				x_batch, y_batch = self.normalize_func2d(x_batch, y_batch)
 
@@ -77,4 +77,4 @@ class Trainer:
 
 			avg_loss = running_loss / self.steps_per_epoch
 			self.save_model_checkpoint(avg_loss)
-		print(f"Epoch {self.epoch}, loss {running_loss}")
+			print(f"Epoch {self.epoch}, loss {running_loss}")
