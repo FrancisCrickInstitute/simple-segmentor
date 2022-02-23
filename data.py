@@ -5,14 +5,14 @@ import os
 from skimage.io import imread
 
 
-def get_dataloader(img_dir, label_dir, batch_size, shuffle):
+def get_dataloader(img_dir, label_dir, batch_size, patch_shape, shuffle):
 	dataset = ImageFolder(img_dir, label_dir)
 	return data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=4)
 
 
 class ImageFolder(data.Dataset):
-	def __init__(self, img_dir, label_dir):
-		self.patch_shape = (12, 256, 256)
+	def __init__(self, img_dir, label_dir, patch_shape):
+		self.patch_shape = patch_shape
 
 		self.img_dir = img_dir
 		for file in os.listdir(self.img_dir):
