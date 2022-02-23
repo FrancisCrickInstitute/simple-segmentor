@@ -13,6 +13,9 @@ Config:
 	- model
 		- type (UNet / UNetInception)
 		- in_channels
+		- start_iblock_channels
+		- num_down_blocks
+		- layers_per_block
 	- optimizer
 		- lr
 	- data
@@ -30,9 +33,15 @@ def run_experiment(config_filepath):
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 	if config["model"]["type"] == "UNet":
-		model = UNet(int(config["model"]["in_channels"]), 1).to(device)
+		model = UNet(int(config["model"]["in_channels"]), 1,
+		                      start_iblock_channels=config["model"]["start_iblock_channels"],
+		                      num_down_blocks=config["model"]["num_down_blocks"],
+		                      layers_per_block=config["model"]["layers_per_block"]).to(device)
 	else:
-		model = UNetInception(int(config["model"]["in_channels"]), 1).to(device)
+		model = UNetInception(int(config["model"]["in_channels"]), 1,
+		                      start_iblock_channels=config["model"]["start_iblock_channels"],
+		                      num_down_blocks=config["model"]["num_down_blocks"],
+		                      layers_per_block=config["model"]["layers_per_block"]).to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=float(config["optimizer"]["lr"]))
 
 	dataloader = get_dataloader(config["data"]["img_dir"],
