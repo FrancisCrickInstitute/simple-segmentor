@@ -6,7 +6,7 @@ from skimage.io import imread
 
 
 def get_dataloader(img_dir, label_dir, batch_size, patch_shape, shuffle):
-	dataset = ImageFolder(img_dir, label_dir)
+	dataset = ImageFolder(img_dir, label_dir, patch_shape)
 	return data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=4)
 
 
