@@ -77,5 +77,4 @@ class Trainer:
 
 			avg_loss = running_loss / self.steps_per_epoch
 			self.save_model_checkpoint(avg_loss)
-			print(f"Epoch {self.epoch}, loss {running_loss}")
-		print()
+		print(f"Epoch {self.epoch}, loss {running_loss}")
