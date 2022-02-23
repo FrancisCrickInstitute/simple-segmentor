@@ -48,17 +48,18 @@ class UNetInceptionBlock(nn.Module):
 
 		if top:
 			self.submodule = submodule
-			up_layers = [nn.Conv2d(in_channels * 6, in_channels, kernel_size=(3, 3), padding=1)]
+			up_layers = [nn.Conv2d(in_channels * 6, in_channels * 3, kernel_size=(3, 3), padding=1)]
 		elif not bottom:
 			self.submodule = submodule
-			up_layers = [nn.ConvTranspose2d(in_channels * 6, in_channels, kernel_size=(3, 3), stride=2, padding=1,
+			up_layers = [nn.ConvTranspose2d(in_channels * 6, in_channels * 3, kernel_size=(3, 3), stride=2, padding=1,
 			                                output_padding=1)]
 		else:
-			up_layers = [nn.ConvTranspose2d(iblock_channels * 3, in_channels, kernel_size=(3, 3), stride=2, padding=1,
+			up_layers = [nn.ConvTranspose2d(iblock_channels * 3, in_channels * 3, kernel_size=(3, 3), stride=2, padding=1,
 			                                 output_padding=1)]
 
 		for i in range(layers - 1):
-			up_layers += [InceptionBlock(in_channels, in_channels // 3)]
+			up_layers += [InceptionBlock(in_channels * 3, in_channels)]
+		up_layers += [nn.Conv2d(in_channels * 3, in_channels, kernel_size=(1, 1))]
 		self.up_model = nn.Sequential(*up_layers)
 
 	def forward(self, x):
@@ -70,7 +71,8 @@ class UNetInceptionBlock(nn.Module):
 			x1 = self.down_model(x)
 			x2 = self.down_pool(x1)
 			x2 = self.submodule(x2)
-			return self.up_model(torch.cat((x1, x2), dim=1))
+			x3 = self.up_model(torch.cat((x1, x2), dim=1))
+			return x3
 
 
 class UNetBlock(nn.Module):
@@ -152,3 +154,13 @@ class UNetInception(nn.Module):
 
 	def forward(self, x):
 		return self.model(x)
+
+
+if __name__ == '__main__':
+	x = torch.randn(1, 12, 256, 256)
+	model = UNetInception(12, 1,
+	                      num_down_blocks=4,
+	                      layers_per_block=2,
+	                      start_iblock_channels=33)
+	pred = model(x)
+	print(pred.shape)
