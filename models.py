@@ -84,9 +84,11 @@ class UNetBlock(nn.Module):
 		super(UNetBlock, self).__init__()
 		self.bottom = bottom
 
-		down_layers = [nn.Conv2d(in_channels, in_channels * 2, kernel_size=(3,3), padding=1)]
+		down_layers = [nn.Conv2d(in_channels, in_channels * 2, kernel_size=(3,3), padding=1),
+		               nn.LeakyReLU(0.1, True)]
 		for layer in range(layers - 1):
-			down_layers += [nn.Conv2d(in_channels * 2, in_channels * 2, kernel_size=(3,3), padding=1)]
+			down_layers += [nn.Conv2d(in_channels * 2, in_channels * 2, kernel_size=(3,3), padding=1),
+		               nn.LeakyReLU(0.1, True)]
 
 		if self.bottom:
 			down_layers += [nn.BatchNorm2d(in_channels * 2)]
@@ -96,17 +98,21 @@ class UNetBlock(nn.Module):
 
 		if top:
 			self.submodule = submodule
-			up_layers = [nn.Conv2d(in_channels * 4, in_channels, kernel_size=(3, 3), padding=1)]
+			up_layers = [nn.Conv2d(in_channels * 4, in_channels, kernel_size=(3, 3), padding=1),
+		               nn.LeakyReLU(0.1, True)]
 		elif not bottom:
 			self.submodule = submodule
 			up_layers = [nn.ConvTranspose2d(in_channels * 4, in_channels, kernel_size=(3, 3), stride=2, padding=1,
-			                                 output_padding=1)]
+			                                 output_padding=1),
+		               nn.LeakyReLU(0.1, True)]
 		else:
 			up_layers = [nn.ConvTranspose2d(in_channels * 2, in_channels, kernel_size=(3, 3), stride=2, padding=1,
-			                                 output_padding=1)]
+			                                 output_padding=1),
+		               nn.LeakyReLU(0.1, True)]
 
 		for i in range(layers - 1):
-			up_layers += [nn.Conv2d(in_channels, in_channels, kernel_size=(3, 3), padding=1)]
+			up_layers += [nn.Conv2d(in_channels, in_channels, kernel_size=(3, 3), padding=1),
+		               nn.LeakyReLU(0.1, True)]
 
 		self.up_model = nn.Sequential(*up_layers)
 
