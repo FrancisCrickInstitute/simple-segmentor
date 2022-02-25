@@ -30,11 +30,11 @@ class Trainer:
 		self.steps_per_epoch = len(self.dataloader.dataset) // self.dataloader.batch_size
 
 	def _dice(self, pred, y, smooth=1):
-		intersection = torch.sum(pred * y)
-		return (2*intersection + smooth) / (torch.sum(pred) + torch.sum(y) + smooth)
+		intersection = torch.sum(pred * y, dim=1)
+		return (2*intersection + smooth) / (torch.sum(pred, dim=1) + torch.sum(y, dim=1) + smooth)
 
 	def loss_func(self, pred, y, smooth=1):
-		return 1 - self._dice(pred, y, smooth=smooth)
+		return 1 - torch.mean(self._dice(pred, y, smooth=smooth), dim=-1)
 
 	def normalize_func2d(self, x, y):
 		return (x - 127)/128, y > 0.5
