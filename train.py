@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 # Add validation at the end of each epoch
 
-def dice(pred, y, smooth=1):
+def dice(pred, y, smooth=0):
 	intersection = torch.sum(pred * y)
 	return (2 * intersection + smooth) / (torch.sum(pred) + torch.sum(y) + smooth)
 
@@ -20,6 +20,8 @@ def dice_loss(pred, y, smooth=1):
 
 class Trainer:
 	def __init__(self, name, model, device, optimizer, dataloader, n_epochs, working_folder):
+		self.bce = torch.nn.BCELoss()
+
 		self.epoch = 0
 		self.total_cpu_time = 0
 		self.total_gpu_time = 0
@@ -37,7 +39,7 @@ class Trainer:
 		self.steps_per_epoch = len(self.dataloader.dataset) // self.dataloader.batch_size
 
 	def normalize_func2d(self, x, y):
-		return (x - 127)/128, y > 0.5
+		return ((x - 127)/128), y > 0.5
 
 	def save_model_checkpoint(self, loss):
 		model_save_folder = os.path.join(self.working_folder, 'model')
@@ -70,7 +72,8 @@ class Trainer:
 
 				self.optimizer.zero_grad()
 				y_pred = self.model(x_batch)
-				loss = dice_loss(y_pred, y_batch)
+				#loss = dice_loss(y_pred, y_batch)
+				loss = self.bce(y_pred, y_batch)
 				loss.backward()
 				self.optimizer.step()
 				running_loss += loss.item()
