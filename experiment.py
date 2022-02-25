@@ -36,12 +36,12 @@ def run_experiment(config_filepath):
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 	if config["model"]["type"] == "UNet":
-		model = UNet(patch_shape[0], 1,
+		model = UNet(patch_shape[0], patch_shape[0],
 		                      start_iblock_channels=config["model"]["start_iblock_channels"],
 		                      num_down_blocks=config["model"]["num_down_blocks"],
 		                      layers_per_block=config["model"]["layers_per_block"]).to(device)
 	else:
-		model = UNetInception(patch_shape[0], 1,
+		model = UNetInception(patch_shape[0], patch_shape[0],
 		                      start_iblock_channels=config["model"]["start_iblock_channels"],
 		                      num_down_blocks=config["model"]["num_down_blocks"],
 		                      layers_per_block=config["model"]["layers_per_block"]).to(device)
