@@ -10,6 +10,13 @@ from tqdm import tqdm
 
 # Add validation at the end of each epoch
 
+def dice(pred, y, smooth=1):
+	intersection = torch.sum(pred * y)
+	return (2 * intersection + smooth) / (torch.sum(pred) + torch.sum(y) + smooth)
+
+def dice_loss(pred, y, smooth=1):
+	return 1 - torch.mean(dice(pred, y, smooth=smooth), dim=-1)
+
 
 class Trainer:
 	def __init__(self, name, model, device, optimizer, dataloader, n_epochs, working_folder):
@@ -28,13 +35,6 @@ class Trainer:
 		self.working_folder = working_folder
 
 		self.steps_per_epoch = len(self.dataloader.dataset) // self.dataloader.batch_size
-
-	def _dice(self, pred, y, smooth=1):
-		intersection = torch.sum(pred * y, dim=1)
-		return (2*intersection + smooth) / (torch.sum(pred, dim=1) + torch.sum(y, dim=1) + smooth)
-
-	def loss_func(self, pred, y, smooth=1):
-		return 1 - torch.mean(self._dice(pred, y, smooth=smooth), dim=-1)
 
 	def normalize_func2d(self, x, y):
 		return (x - 127)/128, y > 0.5
@@ -70,7 +70,7 @@ class Trainer:
 
 				self.optimizer.zero_grad()
 				y_pred = self.model(x_batch)
-				loss = self.loss_func(y_pred, y_batch)
+				loss = dice_loss(y_pred, y_batch)
 				loss.backward()
 				self.optimizer.step()
 				running_loss += loss.item()
