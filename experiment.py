@@ -4,11 +4,12 @@ import torch
 
 from train import Trainer
 from models import UNet, UNetInception
-from data import get_dataloader
+from data import Sampler
 
 """
 Config:
 	- num_epochs
+	- steps_per_epoch
 	- working_folder
 	- patch shape (tuple)
 	- model
@@ -19,8 +20,8 @@ Config:
 	- optimizer
 		- lr
 	- data
-		- img_dir
-		- label_dir
+		- img_path
+		- label_path
 		- batch_size
 """
 
@@ -47,14 +48,14 @@ def run_experiment(config_filepath):
 		                      layers_per_block=config["model"]["layers_per_block"]).to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=float(config["optimizer"]["lr"]))
 
-	dataloader = get_dataloader(config["data"]["img_dir"],
-	                            config["data"]["label_dir"],
-	                            int(config["data"]["batch_size"]),
-	                            config["patch_shape"],
-	                            shuffle=True)
+	sampler = Sampler(config["data"]["image_path"],
+	                  config["data"]["label_path"],
+	                  config["patch_shape"],
+	                  config["data"]["batch_size"])
 
 	trainer = Trainer(experiment_name, model, device,
-	                  optimizer, dataloader, int(config["num_epochs"]),
+	                  optimizer, sampler, int(config["num_epochs"]),
+	                  config["steps_per_epoch"]
 	                  config["working_folder"])
 
 	trainer.train()

@@ -1,12 +1,5 @@
 import torch
 import os
-import numpy as np
-
-from torch import nn
-from torch.utils.data import DataLoader
-
-from tqdm import tqdm
-
 
 # Add validation at the end of each epoch
 
@@ -19,7 +12,7 @@ def dice_loss(pred, y, smooth=1):
 
 
 class Trainer:
-	def __init__(self, name, model, device, optimizer, dataloader, n_epochs, working_folder):
+	def __init__(self, name, model, device, optimizer, sampler, n_epochs, steps_per_epoch, working_folder):
 		self.bce = torch.nn.BCELoss()
 
 		self.epoch = 0
@@ -32,11 +25,10 @@ class Trainer:
 		self.model = model
 		self.device = device
 		self.optimizer = optimizer
-		self.dataloader = dataloader
+		self.sampler = sampler
 		self.n_epochs = n_epochs
+		self.steps_per_epoch = steps_per_epoch
 		self.working_folder = working_folder
-
-		self.steps_per_epoch = len(self.dataloader.dataset) // self.dataloader.batch_size
 
 	def normalize_func2d(self, x, y):
 		return ((x - 127)/128), (y > 0.5)
@@ -63,9 +55,9 @@ class Trainer:
 		for self.epoch in range(self.epoch + 1, self.epoch + self.n_epochs + 1):
 			running_loss = 0
 			# _train_one_epoch, get loss, cpu_time, gpu_time
-			for x_batch, y_batch in self.dataloader:
+			for i in range(self.sampler.steps_per_epoch):
+				x_batch, y_batch = self.sampler.sample()
 				# Add timing stuff
-				#x_batch, y_batch = self.normalize_func2d(x_batch, y_batch)
 				x_batch = (x_batch - 127) / 128
 				y_batch = (y_batch > 0.5)
 
