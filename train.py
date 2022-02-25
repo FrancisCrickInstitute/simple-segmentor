@@ -15,7 +15,7 @@ def dice(pred, y, smooth=0):
 	return (2 * intersection + smooth) / (torch.sum(pred) + torch.sum(y) + smooth)
 
 def dice_loss(pred, y, smooth=1):
-	return 1 - torch.mean(dice(pred, y, smooth=smooth), dim=-1)
+	return 1 - dice(pred, y, smooth=smooth)
 
 
 class Trainer:
@@ -39,7 +39,7 @@ class Trainer:
 		self.steps_per_epoch = len(self.dataloader.dataset) // self.dataloader.batch_size
 
 	def normalize_func2d(self, x, y):
-		return ((x - 127)/128), y > 0.5
+		return ((x - 127)/128), (y > 0.5)
 
 	def save_model_checkpoint(self, loss):
 		model_save_folder = os.path.join(self.working_folder, 'model')
@@ -65,7 +65,9 @@ class Trainer:
 			# _train_one_epoch, get loss, cpu_time, gpu_time
 			for x_batch, y_batch in self.dataloader:
 				# Add timing stuff
-				x_batch, y_batch = self.normalize_func2d(x_batch, y_batch)
+				#x_batch, y_batch = self.normalize_func2d(x_batch, y_batch)
+				x_batch = (x_batch - 127) / 128
+				y_batch = (y_batch > 0.5)
 
 				x_batch = x_batch.to(self.device)
 				y_batch = y_batch.to(self.device)
@@ -80,4 +82,4 @@ class Trainer:
 
 			avg_loss = running_loss / self.steps_per_epoch
 			self.save_model_checkpoint(avg_loss)
-			print(f"Epoch {self.epoch}, average loss {avg_loss}")
+			print(f"Epoch {self.epoch}, average loss {avg_loss}, min pred {torch.min(y_pred)}, max pred {torch.max(y_pred)}")
