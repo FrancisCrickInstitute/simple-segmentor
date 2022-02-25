@@ -14,6 +14,6 @@ optimizer:
  lr: 5e-5
 
 data:
- img_dir: data/images
- label_dir: data/labels
+ image_path: data/images/mito_h_train.tiff
+ label_path: data/labels/mito_h_train.tiff
  batch_size: 4

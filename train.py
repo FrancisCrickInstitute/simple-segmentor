@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import os
 
@@ -55,14 +56,15 @@ class Trainer:
 		for self.epoch in range(self.epoch + 1, self.epoch + self.n_epochs + 1):
 			running_loss = 0
 			# _train_one_epoch, get loss, cpu_time, gpu_time
-			for i in range(self.sampler.steps_per_epoch):
+			for i in range(self.steps_per_epoch):
+				#Add timing stuff
 				x_batch, y_batch = self.sampler.sample()
-				# Add timing stuff
+				
 				x_batch = (x_batch - 127) / 128
 				y_batch = (y_batch > 0.5)
 
-				x_batch = x_batch.to(self.device)
-				y_batch = y_batch.to(self.device)
+				x_batch = torch.from_numpy(x_batch.astype(np.float32)).to(self.device)
+				y_batch = torch.from_numpy(y_batch.astype(np.float32)).to(self.device)
 
 				self.optimizer.zero_grad()
 				y_pred = self.model(x_batch)
@@ -74,4 +76,4 @@ class Trainer:
 
 			avg_loss = running_loss / self.steps_per_epoch
 			self.save_model_checkpoint(avg_loss)
-			print(f"Epoch {self.epoch}, average loss {avg_loss}, min pred {torch.min(y_pred)}, max pred {torch.max(y_pred)}")
+			print(f"Epoch {self.epoch}, average loss {avg_loss}")

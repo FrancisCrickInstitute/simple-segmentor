@@ -55,7 +55,7 @@ def run_experiment(config_filepath):
 
 	trainer = Trainer(experiment_name, model, device,
 	                  optimizer, sampler, int(config["num_epochs"]),
-	                  config["steps_per_epoch"]
+	                  config["steps_per_epoch"],
 	                  config["working_folder"])
 
 	trainer.train()
