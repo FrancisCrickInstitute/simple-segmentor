@@ -43,6 +43,10 @@ class UNetInceptionBlock(nn.Module):
 		down_layers = [InceptionBlock(in_channels, iblock_channels)]
 		for layer in range(layers - 1):
 			down_layers += [InceptionBlock(iblock_channels * 3, iblock_channels)]
+
+		if self.bottom:
+			down_layers += [nn.BatchNorm2d(iblock_channels * 3)]
+
 		self.down_pool = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0)
 		self.down_model = nn.Sequential(*down_layers)
 
@@ -83,6 +87,10 @@ class UNetBlock(nn.Module):
 		down_layers = [nn.Conv2d(in_channels, in_channels * 2, kernel_size=(3,3), padding=1)]
 		for layer in range(layers - 1):
 			down_layers += [nn.Conv2d(in_channels * 2, in_channels * 2, kernel_size=(3,3), padding=1)]
+
+		if self.bottom:
+			down_layers += [nn.BatchNorm2d(in_channels * 2)]
+
 		self.down_pool = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2), padding=0)
 		self.down_model = nn.Sequential(*down_layers)
 
@@ -154,13 +162,3 @@ class UNetInception(nn.Module):
 
 	def forward(self, x):
 		return self.model(x)
-
-
-if __name__ == '__main__':
-	x = torch.randn(1, 12, 256, 256)
-	model = UNetInception(12, 1,
-	                      num_down_blocks=4,
-	                      layers_per_block=2,
-	                      start_iblock_channels=33)
-	pred = model(x)
-	print(pred.shape)
