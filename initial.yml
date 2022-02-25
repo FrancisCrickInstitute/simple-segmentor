@@ -1,13 +1,16 @@
-num_epochs: 10
-
+num_epochs: 100
 working_folder: experiments/initial
+patch_shape: [12, 256, 256]
 
 model:
  type: UNet
  in_channels: 12
+ start_iblock_channels: 32
+ num_down_blocks: 4
+ layers_per_block: 4
 
 optimizer:
- lr: 1e-4
+ lr: 5e-5
 
 data:
  img_dir: data/images
