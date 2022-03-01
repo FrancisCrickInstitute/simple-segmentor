@@ -1,11 +1,9 @@
 num_epochs: 500
-steps_per_epoch: 100
 working_folder: experiments/initial
 patch_shape: [12, 256, 256]
 
 model:
  type: UNet
- in_channels: 12
  start_iblock_channels: 32
  num_down_blocks: 4
  layers_per_block: 4
@@ -14,6 +12,9 @@ optimizer:
  lr: 5e-5
 
 data:
- image_path: data/images/mito_h_train.tiff
- label_path: data/labels/mito_h_train.tiff
+ train_image_path: data/images/mito_h_train.tiff
+ train_label_path: data/labels/mito_h_train.tiff
+ val_image_path: data/images/mito_h_val.tiff
+ val_label_path: data/labels/mito_h_val.tiff
  batch_size: 4
+ steps_per_epoch: 100
