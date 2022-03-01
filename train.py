@@ -38,7 +38,7 @@ class Trainer:
 		model_save_folder = os.path.join(self.working_folder, 'model')
 
 		if val_loss < self.best_epoch['val_loss']:
-			self.best_epoch = {'epoch': self.epoch, 'train_loss': train_loss, val_loss: 'val_loss'}
+			self.best_epoch = {'epoch': self.epoch, 'train_loss': train_loss, val_loss: val_loss}
 			files = os.listdir(model_save_folder)
 			for file in files:
 				filename, ext = os.path.splitext(file)
@@ -73,20 +73,19 @@ class Trainer:
 				self.optimizer.step()
 				train_running_loss += loss.item()
 
-			if self.val_sampler:
-				val_running_loss = 0
-				with torch.no_grad():
-					for i in range(self.val_sampler.steps_per_epoch):
-						x_batch, y_batch = self.val_sampler.sample()
-						x_batch = (x_batch - 127) / 128
-						y_batch = (y_batch > 0.5)
+			val_running_loss = 0
+			with torch.no_grad():
+				for i in range(self.val_sampler.steps_per_epoch):
+					x_batch, y_batch = self.val_sampler.sample()
+					x_batch = (x_batch - 127) / 128
+					y_batch = (y_batch > 0.5)
 
-						x_batch = torch.from_numpy(x_batch.astype(np.float32)).to(self.device)
-						y_batch = torch.from_numpy(y_batch.astype(np.float32)).to(self.device)
+					x_batch = torch.from_numpy(x_batch.astype(np.float32)).to(self.device)
+					y_batch = torch.from_numpy(y_batch.astype(np.float32)).to(self.device)
 
-						y_pred = self.model(x_batch)
-						loss = dice_loss(y_pred, y_batch)
-						val_running_loss += loss.item()
+					y_pred = self.model(x_batch)
+					loss = dice_loss(y_pred, y_batch)
+					val_running_loss += loss.item()
 
 			train_avg_loss = train_running_loss / self.train_sampler.steps_per_epoch
 			val_avg_loss = val_running_loss / self.val_sampler.steps_per_epoch
