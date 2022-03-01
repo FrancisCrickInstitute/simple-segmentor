@@ -19,9 +19,9 @@ Config:
 	- optimizer
 		- lr
 	- data
-		- train_img_path
+		- train_image_path
 		- train_label_path
-		- val_img_path
+		- val_image_path
 		- val_label_path
 		- batch_size
 		- steps_per_epoch

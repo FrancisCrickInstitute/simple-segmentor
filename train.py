@@ -20,7 +20,7 @@ class Trainer:
 		self.total_cpu_time = 0
 		self.total_gpu_time = 0
 		self.collected_loss = []
-		self.best_epoch = {'epoch': 0, 'loss': float('inf')}
+		self.best_epoch = {'epoch': 0, 'train_loss': float('inf'), 'val_loss': float('inf')}
 
 		self.name = name
 		self.model = model
@@ -81,7 +81,7 @@ class Trainer:
 						x_batch = (x_batch - 127) / 128
 						y_batch = (y_batch > 0.5)
 
-						x_batch = torch.from_nump(x_batch.astype(np.float32)).to(self.device)
+						x_batch = torch.from_numpy(x_batch.astype(np.float32)).to(self.device)
 						y_batch = torch.from_numpy(y_batch.astype(np.float32)).to(self.device)
 
 						y_pred = self.model(x_batch)
