@@ -1,4 +1,3 @@
 1. Make experiment.py interactive (takes config file as commandline argument)
 2. Add timing (CPU & GPU time per epoch)
 3. Make log files for each training session
-4. Add batch normalisation to models
