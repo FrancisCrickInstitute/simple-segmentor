@@ -38,7 +38,7 @@ class Trainer:
 		model_save_folder = os.path.join(self.working_folder, 'model')
 
 		if val_loss < self.best_epoch['val_loss']:
-			self.best_epoch = {'epoch': self.epoch, 'train_loss': train_loss, val_loss: val_loss}
+			self.best_epoch = {'epoch': self.epoch, 'train_loss': train_loss, 'val_loss': val_loss}
 			files = os.listdir(model_save_folder)
 			for file in files:
 				filename, ext = os.path.splitext(file)
