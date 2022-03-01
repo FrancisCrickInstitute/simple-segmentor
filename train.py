@@ -68,8 +68,7 @@ class Trainer:
 
 				self.optimizer.zero_grad()
 				y_pred = self.model(x_batch)
-				#loss = dice_loss(y_pred, y_batch)
-				loss = self.bce(y_pred, y_batch)
+				loss = dice_loss(y_pred, y_batch)
 				loss.backward()
 				self.optimizer.step()
 				running_loss += loss.item()
