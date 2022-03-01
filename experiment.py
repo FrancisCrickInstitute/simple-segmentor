@@ -25,7 +25,8 @@ Config:
 		- val_image_path
 		- val_label_path
 		- batch_size
-		- steps_per_epoch
+		- steps_per_train_epoch
+		- steps_per_val_epoch
 """
 
 
