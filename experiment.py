@@ -1,6 +1,7 @@
 import os
 import yaml
 import torch
+import argparse
 
 from train import Trainer
 from models import UNet, UNetInception
@@ -71,4 +72,7 @@ def run_experiment(config_filepath):
 
 
 if __name__ == '__main__':
-	run_experiment("initial.yml")
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--config', type=str, help='config filepath')
+	args = parser.parse_args()
+	run_experiment(args.config)
