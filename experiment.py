@@ -9,7 +9,6 @@ from data import Sampler
 """
 Config:
 	- num_epochs
-	- steps_per_epoch
 	- working_folder
 	- patch shape (tuple)
 	- model
@@ -20,9 +19,12 @@ Config:
 	- optimizer
 		- lr
 	- data
-		- img_path
-		- label_path
+		- train_img_path
+		- train_label_path
+		- val_img_path
+		- val_label_path
 		- batch_size
+		- steps_per_epoch
 """
 
 
@@ -48,14 +50,21 @@ def run_experiment(config_filepath):
 		                      layers_per_block=config["model"]["layers_per_block"]).to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=float(config["optimizer"]["lr"]))
 
-	sampler = Sampler(config["data"]["image_path"],
-	                  config["data"]["label_path"],
+	train_sampler = Sampler(config["data"]["train_image_path"],
+	                  config["data"]["train_label_path"],
 	                  config["patch_shape"],
-	                  config["data"]["batch_size"])
+	                  config["data"]["batch_size"],
+	                  config["data"]["steps_per_epoch"])
+
+	val_sampler = Sampler(config["data"]["val_image_path"],
+	                        config["data"]["val_label_path"],
+	                        config["patch_shape"],
+	                        config["data"]["batch_size"],
+	                        config["data"]["steps_per_epoch"])
 
 	trainer = Trainer(experiment_name, model, device,
-	                  optimizer, sampler, int(config["num_epochs"]),
-	                  config["steps_per_epoch"],
+	                  optimizer, train_sampler, val_sampler,
+	                  int(config["num_epochs"]),
 	                  config["working_folder"])
 
 	trainer.train()

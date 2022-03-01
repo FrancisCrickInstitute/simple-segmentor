@@ -4,11 +4,12 @@ import numpy as np
 from skimage.io import imread
 
 class Sampler:
-	def __init__(self, image_path, label_path, patch_shape, batch_size):
+	def __init__(self, image_path, label_path, patch_shape, batch_size, steps_per_epoch):
 		self.image_path = image_path
 		self.label_path = label_path
 		self.patch_shape = patch_shape
 		self.batch_size = batch_size
+		self.steps_per_epoch = steps_per_epoch
 
 		self.image_stack = imread(image_path)
 		self.label_stack = imread(label_path)
