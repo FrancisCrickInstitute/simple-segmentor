@@ -56,13 +56,13 @@ def run_experiment(config_filepath):
 	                  config["data"]["train_label_path"],
 	                  config["patch_shape"],
 	                  config["data"]["batch_size"],
-	                  config["data"]["steps_per_epoch"])
+	                  config["data"]["steps_per_train_epoch"])
 
 	val_sampler = Sampler(config["data"]["val_image_path"],
 	                        config["data"]["val_label_path"],
 	                        config["patch_shape"],
 	                        config["data"]["batch_size"],
-	                        config["data"]["steps_per_epoch"])
+	                        config["data"]["steps_per_val_epoch"])
 
 	trainer = Trainer(experiment_name, model, device,
 	                  optimizer, train_sampler, val_sampler,

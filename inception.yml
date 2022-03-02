@@ -17,4 +17,5 @@ data:
  val_image_path: data/images/mito_h_val.tiff
  val_label_path: data/labels/mito_h_val.tiff
  batch_size: 12
- steps_per_epoch: 100
+ steps_per_train_epoch: 100
+ steps_per_val_epoch: 10

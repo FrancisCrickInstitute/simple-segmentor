@@ -1,5 +1,5 @@
 num_epochs: 500
-working_folder: experiments/batch
+working_folder: experiments/batch12
 patch_shape: [12, 256, 256]
 
 model:
@@ -17,4 +17,5 @@ data:
  val_image_path: data/images/mito_h_val.tiff
  val_label_path: data/labels/mito_h_val.tiff
  batch_size: 12
- steps_per_epoch: 100
+ steps_per_train_epoch: 100
+ steps_per_val_epoch: 10

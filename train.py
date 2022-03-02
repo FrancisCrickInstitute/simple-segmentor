@@ -36,7 +36,7 @@ class Trainer:
 
 		self.log_file = os.path.join(self.working_folder, self.name + '.log')
 		with open(self.log_file, 'w+') as f:
-			f.write('epoch,training loss, validation loss,train cpu time,train gpu time,val time, timestamp\n')
+			f.write('epoch,training loss,validation loss,train cpu time,train gpu time,val time,timestamp\n')
 
 	def normalize_func2d(self, x, y):
 		return ((x - 127)/128), (y > 0.5)
