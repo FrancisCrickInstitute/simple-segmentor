@@ -34,6 +34,12 @@ class Trainer:
 		self.n_epochs = n_epochs
 		self.working_folder = working_folder
 
+		if not os.path.isdir(self.working_folder):
+			os.mkdir(self.working_folder)
+			os.mkdir(os.path.join(self.working_folder, 'model'))
+		elif not os.path.isdir(os.path.join(self.working_folder, 'model')):
+			os.mkdir(os.path.join(self.working_folder, 'model'))
+
 		self.log_file = os.path.join(self.working_folder, self.name + '.log')
 		with open(self.log_file, 'w+') as f:
 			f.write('epoch,training loss,validation loss,train cpu time,train gpu time,val time,timestamp\n')
