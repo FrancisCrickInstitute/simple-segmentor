@@ -5,6 +5,12 @@ from torch.utils import data
 
 from skimage.io import imread
 
+
+def get_dataloader(image_path, label_path, patch_shape, batch_size, shuffle):
+	dataset = SequentialDataset(image_path, label_path, patch_shape)
+	return data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=4)
+
+
 class Sampler:
 	def __init__(self, image_path, label_path, patch_shape, batch_size, steps_per_epoch):
 		self.image_path = image_path

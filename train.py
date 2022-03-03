@@ -3,6 +3,7 @@ import torch
 import os
 import time
 
+from tqdm import tqdm
 from datetime import datetime
 
 # Add validation at the end of each epoch
@@ -16,7 +17,7 @@ def dice_loss(pred, y, smooth=1):
 
 
 class Trainer:
-	def __init__(self, name, model, device, optimizer, train_sampler, val_sampler, n_epochs, working_folder):
+	def __init__(self, name, model, device, optimizer, train_dataloader, val_dataloader, n_epochs, working_folder):
 		self.bce = torch.nn.BCELoss()
 
 		self.epoch = 0
@@ -29,8 +30,8 @@ class Trainer:
 		self.model = model
 		self.device = device
 		self.optimizer = optimizer
-		self.train_sampler = train_sampler
-		self.val_sampler = val_sampler
+		self.train_dataloader = train_dataloader
+		self.val_dataloader = val_dataloader
 		self.n_epochs = n_epochs
 		self.working_folder = working_folder
 
@@ -69,7 +70,6 @@ class Trainer:
 			f.write(f'{self.epoch},{train_loss:.4f},{val_loss:.4f},{cpu_time:.2f}s,{gpu_time:.2f}s,{val_time:.2f}s'
 			        f',{datetime.now()}\n')
 
-
 	def train(self):
 		print(f"=> Training...")
 		for self.epoch in range(self.epoch + 1, self.epoch + self.n_epochs + 1):
@@ -77,9 +77,8 @@ class Trainer:
 			cpu_time = 0
 			gpu_time = 0
 
-			for i in range(self.train_sampler.steps_per_epoch):
+			for x_batch, y_batch in tqdm(self.train_dataloader):
 				loop_iter_start_time = time.time()
-				x_batch, y_batch = self.train_sampler.sample()
 				
 				x_batch = (x_batch - 127) / 128
 				y_batch = (y_batch > 0.5)
@@ -108,8 +107,7 @@ class Trainer:
 			val_running_loss = 0
 			val_start_time = time.time()
 			with torch.no_grad():
-				for i in range(self.val_sampler.steps_per_epoch):
-					x_batch, y_batch = self.val_sampler.sample()
+				for x_batch, y_batch in self.val_dataloader:
 					x_batch = (x_batch - 127) / 128
 					y_batch = (y_batch > 0.5)
 
