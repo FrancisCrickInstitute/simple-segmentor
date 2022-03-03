@@ -77,16 +77,20 @@ class Trainer:
 			cpu_time = 0
 			gpu_time = 0
 
-			for x_batch, y_batch in tqdm(self.train_dataloader):
+			for x_batch, y_batch in self.train_dataloader:
 				loop_iter_start_time = time.time()
 				
-				x_batch = (x_batch - 127) / 128
-				y_batch = (y_batch > 0.5)
+				# If this isn't done then the normalisation function gives a range [0, 2]?
+				x_batch = x_batch.type(torch.int)
+				y_batch = y_batch.type(torch.int)
+				
+
+				x_batch, y_batch = self.normalize_func2d(x_batch, y_batch)
 
 				cpu_cycle_done_time = time.time()
 
-				x_batch = torch.from_numpy(x_batch.astype(np.float32)).to(self.device)
-				y_batch = torch.from_numpy(y_batch.astype(np.float32)).to(self.device)
+				x_batch = x_batch.to(self.device)
+				y_batch = y_batch.to(self.device)
 
 				self.optimizer.zero_grad()
 				y_pred = self.model(x_batch)
@@ -108,11 +112,13 @@ class Trainer:
 			val_start_time = time.time()
 			with torch.no_grad():
 				for x_batch, y_batch in self.val_dataloader:
-					x_batch = (x_batch - 127) / 128
-					y_batch = (y_batch > 0.5)
+					x_batch = x_batch.type(torch.int)
+					y_batch = y_batch.type(torch.int)
+					
+					x_batch, y_batch = self.normalize_func2d(x_batch, y_batch)
 
-					x_batch = torch.from_numpy(x_batch.astype(np.float32)).to(self.device)
-					y_batch = torch.from_numpy(y_batch.astype(np.float32)).to(self.device)
+					x_batch = x_batch.to(self.device)
+					y_batch = y_batch.to(self.device)
 
 					y_pred = self.model(x_batch)
 					loss = dice_loss(y_pred, y_batch)
@@ -120,8 +126,7 @@ class Trainer:
 
 			val_time = time.time() - val_start_time
 
-			train_avg_loss = train_running_loss / self.train_sampler.steps_per_epoch
-			val_avg_loss = val_running_loss / self.val_sampler.steps_per_epoch
+			train_avg_loss = train_running_loss / len(self.train_dataloader)
+			val_avg_loss = val_running_loss / len(self.val_dataloader)
 			self.save_model_checkpoint(train_avg_loss, val_avg_loss)
 			self.append_to_log(train_avg_loss, val_avg_loss, cpu_time, gpu_time, val_time)
-			print(f"Epoch {self.epoch},\taverage train loss {train_avg_loss},\taverage val loss {val_avg_loss}")
