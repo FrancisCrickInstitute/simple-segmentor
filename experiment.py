@@ -2,6 +2,7 @@ import os
 import yaml
 import torch
 import argparse
+import shutil
 
 from train import Trainer
 from models import UNet, UNetInception
@@ -10,7 +11,6 @@ from data import Sampler
 """
 Config:
 	- num_epochs
-	- working_folder
 	- patch shape (tuple)
 	- model
 		- type (UNet / UNetInception)
@@ -31,9 +31,17 @@ Config:
 
 
 def run_experiment(config_filepath):
+	if not os.path.exists(config_filepath):
+		print("Config filepath does not exist")
+		return
 	with open(config_filepath) as f:
 		config = yaml.load(f, Loader=yaml.FullLoader)
 	experiment_name, _ = os.path.splitext(os.path.basename(config_filepath))
+	working_folder = os.path.join("experiments", experiment_name)
+	if not os.path.isdir(working_folder):
+		os.mkdir(working_folder)
+		os.mkdir(os.path.join(working_folder, 'model'))
+		shutil.copy(config_filepath, os.path.join(working_folder, config_filepath))
 
 	patch_shape = config["patch_shape"]
 	patch_shape = (int(patch_shape[0]), int(patch_shape[1]), int(patch_shape[2]))
@@ -67,7 +75,7 @@ def run_experiment(config_filepath):
 	trainer = Trainer(experiment_name, model, device,
 	                  optimizer, train_sampler, val_sampler,
 	                  int(config["num_epochs"]),
-	                  config["working_folder"])
+	                  working_folder)
 
 	trainer.train()
 

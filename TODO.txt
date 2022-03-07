@@ -1,0 +1,1 @@
+Copy the config yml into the experiment folder at the start of an experiment
