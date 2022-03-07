@@ -6,12 +6,14 @@ import shutil
 
 from train import Trainer
 from models import UNet, UNetInception
-from data import Sampler
+from data import get_dataloader
 
 """
 Config:
 	- num_epochs
 	- patch shape (tuple)
+	- working_folder
+	- patch_shape (tuple)
 	- model
 		- type (UNet / UNetInception)
 		- start_iblock_channels
@@ -25,8 +27,6 @@ Config:
 		- val_image_path
 		- val_label_path
 		- batch_size
-		- steps_per_train_epoch
-		- steps_per_val_epoch
 """
 
 
@@ -60,20 +60,20 @@ def run_experiment(config_filepath):
 		                      layers_per_block=config["model"]["layers_per_block"]).to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=float(config["optimizer"]["lr"]))
 
-	train_sampler = Sampler(config["data"]["train_image_path"],
-	                  config["data"]["train_label_path"],
-	                  config["patch_shape"],
-	                  config["data"]["batch_size"],
-	                  config["data"]["steps_per_train_epoch"])
+	train_dataloader = get_dataloader(config["data"]["train_image_path"],
+	                                  config["data"]["train_label_path"],
+	                                  config["patch_shape"],
+	                                  config["data"]["batch_size"],
+	                                  True)
 
-	val_sampler = Sampler(config["data"]["val_image_path"],
-	                        config["data"]["val_label_path"],
-	                        config["patch_shape"],
-	                        config["data"]["batch_size"],
-	                        config["data"]["steps_per_val_epoch"])
+	val_dataloader = get_dataloader(config["data"]["val_image_path"],
+	                                config["data"]["val_label_path"],
+	                                config["patch_shape"],
+	                                config["data"]["batch_size"],
+	                                False)
 
 	trainer = Trainer(experiment_name, model, device,
-	                  optimizer, train_sampler, val_sampler,
+	                  optimizer, train_dataloader, val_dataloader,
 	                  int(config["num_epochs"]),
 	                  working_folder)
 

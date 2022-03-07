@@ -3,6 +3,7 @@ import torch
 import os
 import time
 
+from tqdm import tqdm
 from datetime import datetime
 
 # Add validation at the end of each epoch
@@ -16,7 +17,7 @@ def dice_loss(pred, y, smooth=1):
 
 
 class Trainer:
-	def __init__(self, name, model, device, optimizer, train_sampler, val_sampler, n_epochs, working_folder):
+	def __init__(self, name, model, device, optimizer, train_dataloader, val_dataloader, n_epochs, working_folder):
 		self.bce = torch.nn.BCELoss()
 
 		self.epoch = 0
@@ -29,8 +30,8 @@ class Trainer:
 		self.model = model
 		self.device = device
 		self.optimizer = optimizer
-		self.train_sampler = train_sampler
-		self.val_sampler = val_sampler
+		self.train_dataloader = train_dataloader
+		self.val_dataloader = val_dataloader
 		self.n_epochs = n_epochs
 		self.working_folder = working_folder
 
@@ -63,7 +64,6 @@ class Trainer:
 			f.write(f'{self.epoch},{train_loss:.4f},{val_loss:.4f},{cpu_time:.2f}s,{gpu_time:.2f}s,{val_time:.2f}s'
 			        f',{datetime.now()}\n')
 
-
 	def train(self):
 		print(f"=> Training...")
 		for self.epoch in range(self.epoch + 1, self.epoch + self.n_epochs + 1):
@@ -71,17 +71,20 @@ class Trainer:
 			cpu_time = 0
 			gpu_time = 0
 
-			for i in range(self.train_sampler.steps_per_epoch):
+			for x_batch, y_batch in self.train_dataloader:
 				loop_iter_start_time = time.time()
-				x_batch, y_batch = self.train_sampler.sample()
 				
-				x_batch = (x_batch - 127) / 128
-				y_batch = (y_batch > 0.5)
+				# If this isn't done then the normalisation function gives a range [0, 2]?
+				x_batch = x_batch.type(torch.int)
+				y_batch = y_batch.type(torch.int)
+				
+
+				x_batch, y_batch = self.normalize_func2d(x_batch, y_batch)
 
 				cpu_cycle_done_time = time.time()
 
-				x_batch = torch.from_numpy(x_batch.astype(np.float32)).to(self.device)
-				y_batch = torch.from_numpy(y_batch.astype(np.float32)).to(self.device)
+				x_batch = x_batch.to(self.device)
+				y_batch = y_batch.to(self.device)
 
 				self.optimizer.zero_grad()
 				y_pred = self.model(x_batch)
@@ -102,13 +105,14 @@ class Trainer:
 			val_running_loss = 0
 			val_start_time = time.time()
 			with torch.no_grad():
-				for i in range(self.val_sampler.steps_per_epoch):
-					x_batch, y_batch = self.val_sampler.sample()
-					x_batch = (x_batch - 127) / 128
-					y_batch = (y_batch > 0.5)
+				for x_batch, y_batch in self.val_dataloader:
+					x_batch = x_batch.type(torch.int)
+					y_batch = y_batch.type(torch.int)
+					
+					x_batch, y_batch = self.normalize_func2d(x_batch, y_batch)
 
-					x_batch = torch.from_numpy(x_batch.astype(np.float32)).to(self.device)
-					y_batch = torch.from_numpy(y_batch.astype(np.float32)).to(self.device)
+					x_batch = x_batch.to(self.device)
+					y_batch = y_batch.to(self.device)
 
 					y_pred = self.model(x_batch)
 					loss = dice_loss(y_pred, y_batch)
@@ -116,8 +120,7 @@ class Trainer:
 
 			val_time = time.time() - val_start_time
 
-			train_avg_loss = train_running_loss / self.train_sampler.steps_per_epoch
-			val_avg_loss = val_running_loss / self.val_sampler.steps_per_epoch
+			train_avg_loss = train_running_loss / len(self.train_dataloader)
+			val_avg_loss = val_running_loss / len(self.val_dataloader)
 			self.save_model_checkpoint(train_avg_loss, val_avg_loss)
 			self.append_to_log(train_avg_loss, val_avg_loss, cpu_time, gpu_time, val_time)
-			print(f"Epoch {self.epoch},\taverage train loss {train_avg_loss},\taverage val loss {val_avg_loss}")
