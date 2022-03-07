@@ -38,10 +38,14 @@ def run_experiment(config_filepath):
 		config = yaml.load(f, Loader=yaml.FullLoader)
 	experiment_name, _ = os.path.splitext(os.path.basename(config_filepath))
 	working_folder = os.path.join("experiments", experiment_name)
+
 	if not os.path.isdir(working_folder):
 		os.mkdir(working_folder)
 		os.mkdir(os.path.join(working_folder, 'model'))
-		shutil.copy(config_filepath, os.path.join(working_folder, config_filepath))
+	elif not os.path.isdir(os.path.join(working_folder, 'model')):
+		os.mkdkir(os.path.join(working_folder, 'model'))
+
+	shutil.copy(config_filepath, os.path.join(working_folder, config_filepath))
 
 	patch_shape = config["patch_shape"]
 	patch_shape = (int(patch_shape[0]), int(patch_shape[1]), int(patch_shape[2]))
