@@ -65,8 +65,8 @@ class Trainer:
 			        f',{datetime.now()}\n')
 
 	def train(self):
-		print(f"Training dataset:\t{len(self.train_dataloader)} batches")
-		print(f"Validation dataset:\t{len(self.val_dataloader)} batches")
+		print(f"Training dataset:\t{len(self.train_dataloader.dataset)} patches")
+		print(f"Validation dataset:\t{len(self.val_dataloader.dataset)} patches")
 		print(f"=> Training...")
 		for self.epoch in range(self.epoch + 1, self.epoch + self.n_epochs + 1):
 			train_running_loss = 0

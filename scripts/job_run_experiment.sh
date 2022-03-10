@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --ntasks=1
-#SBATCH --time=21-00:00:0
+#SBATCH --time=3-00:00:0
 #SBATCH --mem=192G
 #SBATCH --partition=gpu
 #SBATCH --cpus-per-task=4

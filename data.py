@@ -11,7 +11,7 @@ def get_dataloader(image_path, label_path, patch_shape, batch_size, num_samples=
 	if num_samples is None:
 		return data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4)
 	else:
-		sampler = data.RandomSampler(dataset, replacement=True, num_samples=num_samples)
+		sampler = data.RandomSampler(dataset, replacement=True, num_samples=num_samples * batch_size)
 		return data.DataLoader(dataset, sampler=sampler, batch_size=batch_size, shuffle=False, num_workers=4)
 
 

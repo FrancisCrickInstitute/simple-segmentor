@@ -71,14 +71,12 @@ def run_experiment(config_filepath):
 		                                  config["data"]["train_label_path"],
 		                                  config["patch_shape"],
 		                                  config["data"]["batch_size"],
-		                                  True,
 		                                  num_samples=config["data"]["steps_per_train_epoch"])
 	else:
 		train_dataloader = get_dataloader(config["data"]["train_image_path"],
 		                                  config["data"]["train_label_path"],
 		                                  config["patch_shape"],
-		                                  config["data"]["batch_size"],
-		                                  True)
+		                                  config["data"]["batch_size"])
 
 	if "steps_per_val_epoch" in config["data"]:
 		val_dataloader = get_dataloader(config["data"]["val_image_path"],

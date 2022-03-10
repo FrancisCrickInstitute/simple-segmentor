@@ -1,0 +1,18 @@
+num_epochs: 500
+patch_shape: [12, 320, 320]
+
+model:
+ type: UNet
+ start_iblock_channels: 32
+ num_down_blocks: 4
+ layers_per_block: 4
+
+optimizer:
+ lr: 5e-5
+
+data:
+ train_image_path: data/images/mito_h_train.tiff
+ train_label_path: data/labels/mito_h_train.tiff
+ val_image_path: data/images/mito_h_val.tiff
+ val_label_path: data/labels/mito_h_val.tiff
+ batch_size: 24
