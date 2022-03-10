@@ -85,14 +85,12 @@ def run_experiment(config_filepath):
 		                                config["data"]["val_label_path"],
 		                                config["patch_shape"],
 		                                config["data"]["batch_size"],
-		                                False,
-		                                num_samples=config["data"]["steps_per_val_epoch"])
+		                                num_samples=int(config["data"]["steps_per_val_epoch"]))
 	else:
 		val_dataloader = get_dataloader(config["data"]["val_image_path"],
 		                                config["data"]["val_label_path"],
 		                                config["patch_shape"],
-		                                config["data"]["batch_size"],
-		                                False)
+		                                config["data"]["batch_size"])
 
 	trainer = Trainer(experiment_name, model, device,
 	                  optimizer, train_dataloader, val_dataloader,
