@@ -43,7 +43,7 @@ def run_experiment(config_filepath):
 		os.mkdir(working_folder)
 		os.mkdir(os.path.join(working_folder, 'model'))
 	elif not os.path.isdir(os.path.join(working_folder, 'model')):
-		os.mkdkir(os.path.join(working_folder, 'model'))
+		os.mkdir(os.path.join(working_folder, 'model'))
 
 	shutil.copy(config_filepath, os.path.join(working_folder, config_filepath))
 
