@@ -27,6 +27,8 @@ Config:
 		- val_image_path
 		- val_label_path
 		- batch_size
+		- steps_per_train_epoch
+		- steps_per_val_epoch
 """
 
 
@@ -64,17 +66,33 @@ def run_experiment(config_filepath):
 		                      layers_per_block=config["model"]["layers_per_block"]).to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=float(config["optimizer"]["lr"]))
 
-	train_dataloader = get_dataloader(config["data"]["train_image_path"],
-	                                  config["data"]["train_label_path"],
-	                                  config["patch_shape"],
-	                                  config["data"]["batch_size"],
-	                                  True)
+	if "steps_per_train_epoch" in config["data"]:
+		train_dataloader = get_dataloader(config["data"]["train_image_path"],
+		                                  config["data"]["train_label_path"],
+		                                  config["patch_shape"],
+		                                  config["data"]["batch_size"],
+		                                  True,
+		                                  num_samples=config["data"]["steps_per_train_epoch"])
+	else:
+		train_dataloader = get_dataloader(config["data"]["train_image_path"],
+		                                  config["data"]["train_label_path"],
+		                                  config["patch_shape"],
+		                                  config["data"]["batch_size"],
+		                                  True)
 
-	val_dataloader = get_dataloader(config["data"]["val_image_path"],
-	                                config["data"]["val_label_path"],
-	                                config["patch_shape"],
-	                                config["data"]["batch_size"],
-	                                False)
+	if "steps_per_val_epoch" in config["data"]:
+		val_dataloader = get_dataloader(config["data"]["val_image_path"],
+		                                config["data"]["val_label_path"],
+		                                config["patch_shape"],
+		                                config["data"]["batch_size"],
+		                                False,
+		                                num_samples=config["data"]["steps_per_val_epoch"])
+	else:
+		val_dataloader = get_dataloader(config["data"]["val_image_path"],
+		                                config["data"]["val_label_path"],
+		                                config["patch_shape"],
+		                                config["data"]["batch_size"],
+		                                False)
 
 	trainer = Trainer(experiment_name, model, device,
 	                  optimizer, train_dataloader, val_dataloader,
