@@ -8,6 +8,21 @@ from datetime import datetime
 
 # Add validation at the end of each epoch
 
+def recall(pred, y):
+	tp = np.sum(np.logical_and(pred, y))
+	fn = np.sum(np.logical_and(pred == 0, y == 1))
+	return float(tp/(tp + fn))
+
+def precision(pred, y):
+	tp = np.sum(np.logical_and(pred, y))
+	fp = np.sum(np.logical_and(pred == 1, y == 0))
+	return float(tp/(tp + fp))
+
+def iou(pred, y):
+	intersection = torch.sum(pred * y)
+	union = torch.sum(torch.logical_or(pred, y))
+	return intersection / union
+
 def dice(pred, y, smooth=0):
 	intersection = torch.sum(pred * y)
 	return (2 * intersection + smooth) / (torch.sum(pred) + torch.sum(y) + smooth)
@@ -64,6 +79,87 @@ class Trainer:
 			f.write(f'{self.epoch},{train_loss:.4f},{val_loss:.4f},{cpu_time:.2f}s,{gpu_time:.2f}s,{val_time:.2f}s'
 			        f',{datetime.now()}\n')
 
+	def evaluate(self, dataloader):
+		with torch.no_grad():
+			total_dice = 0
+			total_iou = 0
+			total_precision = 0
+			total_recall = 0
+			total_cpu_time = 0
+			total_gpu_time = 0
+			for x_batch, y_batch in dataloader:
+				cpu_start_time = time.time()
+
+				x_batch, y_batch = x_batch.type(torch.int), y_batch.type(torch.int)
+				x_batch, y_batch = self.normalize_func2d(x_batch, y_batch)
+				cpu_done_time = time.time()
+
+				x_batch = x_batch.to(self.device)
+				y_batch = y_batch.to(self.device)
+
+				y_pred = self.model(x_batch)
+				total_dice += dice(y_pred, y_batch)
+
+				y_pred = y_pred > 0.5
+				y_batch = y_batch > 0.5
+
+				total_iou += iou(y_pred, y_batch)
+				total_precision += precision(y_pred, y_batch)
+				total_recall += recall(y_pred, y_batch)
+
+				total_cpu_time += cpu_done_time - cpu_start_time
+				total_gpu_time += time.time() - cpu_done_time
+
+			avg_dice = total_dice / len(dataloader)
+			avg_iou = total_iou / len(dataloader)
+			avg_precision = total_precision / len(dataloader)
+			avg_recall = total_recall / len(dataloader)
+
+			avg_cpu_time = total_cpu_time / len(dataloader)
+			avg_gpu_time = total_gpu_time / len(dataloader)
+			return {
+				"DICE": avg_dice,
+				"IoU": avg_iou,
+				"Precision": avg_precision,
+				"Recall": avg_recall,
+				"GPU time": avg_gpu_time,
+				"CPU time": avg_cpu_time
+			}
+
+	def save_best_epoch(self):
+		model_save_folder = os.path.join(self.working_folder, 'model')
+		files = os.listdir(model_save_folder)
+		best_epoch = 0
+		for file in files:
+			filename, ext = os.path.splitext(file)
+			if filename.startswith(f'{self.name}.best.') and ext == 'pt':
+				self.model.load_state_dict(torch.load(os.path.join(model_save_folder, file)))
+				best_epoch = int(filename.split(".")[-1])
+				break
+
+		train_metrics = self.evaluate(self.train_dataloader)
+		val_metrics = self.evaluate(self.val_dataloader)
+
+		results_file = os.path.join(self.working_folder, self.name + 'results')
+		with open(results_file, "w+") as f:
+			f.write(f"Best epoch: {best_epoch}\n\n")
+
+			f.write("Best epoch training set results:\n")
+			f.write(f" - DICE score: {train_metrics['DICE']}\n")
+			f.write(f" - IoU score: {train_metrics['IoU']}\n")
+			f.write(f" - Precision: {train_metrics['Precision']}\n")
+			f.write(f" - Recall: {train_metrics['Recall']}\n")
+			f.write(f" - GPU time: {train_metrics['GPU time']}\n")
+			f.write(f" - CPU time: {train_metrics['CPU time']}\n\n")
+
+			f.write("Best epoch validation set results:\n")
+			f.write(f" - DICE score: {val_metrics['DICE']}\n")
+			f.write(f" - IoU score: {val_metrics['IoU']}\n")
+			f.write(f" - Precision: {val_metrics['Precision']}\n")
+			f.write(f" - Recall: {val_metrics['Recall']}\n")
+			f.write(f" - GPU time: {val_metrics['GPU time']}\n")
+			f.write(f" - CPU time: {val_metrics['CPU time']}\n")
+
 	def train(self):
 		print(f"Training dataset:\t{len(self.train_dataloader.dataset)} patches")
 		print(f"Validation dataset:\t{len(self.val_dataloader.dataset)} patches")
@@ -75,8 +171,7 @@ class Trainer:
 
 			for x_batch, y_batch in self.train_dataloader:
 				loop_iter_start_time = time.time()
-				
-				# If this isn't done then the normalisation function gives a range [0, 2]?
+
 				x_batch = x_batch.type(torch.int)
 				y_batch = y_batch.type(torch.int)
 				
@@ -126,3 +221,5 @@ class Trainer:
 			val_avg_loss = val_running_loss / len(self.val_dataloader)
 			self.save_model_checkpoint(train_avg_loss, val_avg_loss)
 			self.append_to_log(train_avg_loss, val_avg_loss, cpu_time, gpu_time, val_time)
+
+		self.save_best_epoch()
