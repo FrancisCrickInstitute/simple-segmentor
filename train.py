@@ -9,13 +9,13 @@ from datetime import datetime
 # Add validation at the end of each epoch
 
 def recall(pred, y):
-	tp = np.sum(np.logical_and(pred, y))
-	fn = np.sum(np.logical_and(pred == 0, y == 1))
+	tp = torch.sum(torch.logical_and(pred, y))
+	fn = torch.sum(torch.logical_and(pred == 0, y == 1))
 	return float(tp/(tp + fn))
 
 def precision(pred, y):
-	tp = np.sum(np.logical_and(pred, y))
-	fp = np.sum(np.logical_and(pred == 1, y == 0))
+	tp = torch.sum(torch.logical_and(pred, y))
+	fp = torch.sum(torch.logical_and(pred == 1, y == 0))
 	return float(tp/(tp + fp))
 
 def iou(pred, y):
@@ -136,11 +136,11 @@ class Trainer:
 				self.model.load_state_dict(torch.load(os.path.join(model_save_folder, file)))
 				best_epoch = int(filename.split(".")[-1])
 				break
-
+		
 		train_metrics = self.evaluate(self.train_dataloader)
 		val_metrics = self.evaluate(self.val_dataloader)
 
-		results_file = os.path.join(self.working_folder, self.name + 'results')
+		results_file = os.path.join(self.working_folder, self.name + '.results')
 		with open(results_file, "w+") as f:
 			f.write(f"Best epoch: {best_epoch}\n\n")
 
