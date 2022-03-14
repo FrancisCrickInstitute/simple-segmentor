@@ -78,9 +78,9 @@ def run_experiment(config_filepath):
 	                                config["data"]["batch_size"],
 	                                shuffle=not "steps_per_val_epoch" in config["data"])
 
-	steps_per_train_epoch = config["data"]["steps_per_train_epoch"] \
+	steps_per_train_epoch = int(config["data"]["steps_per_train_epoch"]) \
 		if "steps_per_train_epoch" in config["data"] else None
-	steps_per_val_epoch = config["data"]["steps_per_val_epoch"] \
+	steps_per_val_epoch = int(config["data"]["steps_per_val_epoch"]) \
 		if "steps_per_val_epoch" in config["data"] else None
 
 	trainer = Trainer(experiment_name, model, device,

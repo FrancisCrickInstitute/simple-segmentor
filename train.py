@@ -118,15 +118,13 @@ class Trainer:
 			avg_precision = total_precision / len(dataloader)
 			avg_recall = total_recall / len(dataloader)
 
-			avg_cpu_time = total_cpu_time / len(dataloader)
-			avg_gpu_time = total_gpu_time / len(dataloader)
 			return {
 				"DICE": avg_dice,
 				"IoU": avg_iou,
 				"Precision": avg_precision,
 				"Recall": avg_recall,
-				"GPU time": avg_gpu_time,
-				"CPU time": avg_cpu_time
+				"GPU time": total_gpu_time,
+				"CPU time": total_cpu_time
 			}
 
 	def save_best_epoch(self):
@@ -145,7 +143,7 @@ class Trainer:
 
 		results_file = os.path.join(self.working_folder, self.name + '.results')
 		with open(results_file, "w+") as f:
-			f.write(f"Best epoch: {best_epoch}\n\n")
+			f.write(f"Best epoch: {best_epoch + 1}\n\n")
 
 			f.write("Best epoch training set results:\n")
 			f.write(f" - DICE score: {train_metrics['DICE']}\n")
@@ -172,8 +170,8 @@ class Trainer:
 			cpu_time = 0
 			gpu_time = 0
 
-			for i, x_batch, y_batch in enumerate(self.train_dataloader):
-				if self.steps_per_train_epoch is not None and i > self.steps_per_train_epoch:
+			for i, (x_batch, y_batch) in enumerate(self.train_dataloader):
+				if self.steps_per_train_epoch is not None and i >= self.steps_per_train_epoch:
 					break
 				loop_iter_start_time = time.time()
 
@@ -207,8 +205,8 @@ class Trainer:
 			val_running_loss = 0
 			val_start_time = time.time()
 			with torch.no_grad():
-				for i, x_batch, y_batch in enumerate(self.val_dataloader):
-					if self.steps_per_val_epoch is not None and i > self.steps_per_val_epoch:
+				for i, (x_batch, y_batch) in enumerate(self.val_dataloader):
+					if self.steps_per_val_epoch is not None and i >= self.steps_per_val_epoch:
 						break
 					x_batch = x_batch.type(torch.int)
 					y_batch = y_batch.type(torch.int)
@@ -223,9 +221,16 @@ class Trainer:
 					val_running_loss += loss.item()
 
 			val_time = time.time() - val_start_time
-
-			train_avg_loss = train_running_loss / len(self.train_dataloader)
-			val_avg_loss = val_running_loss / len(self.val_dataloader)
+			
+			if self.steps_per_train_epoch is None:
+				train_avg_loss = train_running_loss / len(self.train_dataloader)
+			else:
+				train_avg_loss = train_running_loss / self.steps_per_train_epoch
+			
+			if self.steps_per_val_epoch is None:
+				val_avg_loss = val_running_loss / len(self.val_dataloader)
+			else:
+				val_avg_loss = val_running_loss / self.steps_per_val_epoch
 			self.save_model_checkpoint(train_avg_loss, val_avg_loss)
 			self.append_to_log(train_avg_loss, val_avg_loss, cpu_time, gpu_time, val_time)
 
