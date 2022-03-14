@@ -32,7 +32,8 @@ def dice_loss(pred, y, smooth=1):
 
 
 class Trainer:
-	def __init__(self, name, model, device, optimizer, train_dataloader, val_dataloader, n_epochs, working_folder):
+	def __init__(self, name, model, device, optimizer, train_dataloader,
+	             val_dataloader, n_epochs, working_folder, steps_per_train_epoch, steps_per_val_epoch):
 		self.bce = torch.nn.BCELoss()
 
 		self.epoch = 0
@@ -49,6 +50,8 @@ class Trainer:
 		self.val_dataloader = val_dataloader
 		self.n_epochs = n_epochs
 		self.working_folder = working_folder
+		self.steps_per_train_epoch = steps_per_train_epoch
+		self.steps_per_val_epoch = steps_per_val_epoch
 
 		self.log_file = os.path.join(self.working_folder, self.name + '.log')
 		with open(self.log_file, 'w+') as f:
@@ -169,7 +172,9 @@ class Trainer:
 			cpu_time = 0
 			gpu_time = 0
 
-			for x_batch, y_batch in self.train_dataloader:
+			for i, x_batch, y_batch in enumerate(self.train_dataloader):
+				if self.steps_per_train_epoch is not None and i > self.steps_per_train_epoch:
+					break
 				loop_iter_start_time = time.time()
 
 				x_batch = x_batch.type(torch.int)
@@ -202,7 +207,9 @@ class Trainer:
 			val_running_loss = 0
 			val_start_time = time.time()
 			with torch.no_grad():
-				for x_batch, y_batch in self.val_dataloader:
+				for i, x_batch, y_batch in enumerate(self.val_dataloader):
+					if self.steps_per_val_epoch is not None and i > self.steps_per_val_epoch:
+						break
 					x_batch = x_batch.type(torch.int)
 					y_batch = y_batch.type(torch.int)
 					

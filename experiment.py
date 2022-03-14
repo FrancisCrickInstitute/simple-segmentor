@@ -66,34 +66,29 @@ def run_experiment(config_filepath):
 		                      layers_per_block=config["model"]["layers_per_block"]).to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=float(config["optimizer"]["lr"]))
 
-	if "steps_per_train_epoch" in config["data"]:
-		train_dataloader = get_dataloader(config["data"]["train_image_path"],
-		                                  config["data"]["train_label_path"],
-		                                  config["patch_shape"],
-		                                  config["data"]["batch_size"],
-		                                  num_samples=config["data"]["steps_per_train_epoch"])
-	else:
-		train_dataloader = get_dataloader(config["data"]["train_image_path"],
-		                                  config["data"]["train_label_path"],
-		                                  config["patch_shape"],
-		                                  config["data"]["batch_size"])
+	train_dataloader = get_dataloader(config["data"]["train_image_path"],
+	                                  config["data"]["train_label_path"],
+	                                  config["patch_shape"],
+	                                  config["data"]["batch_size"],
+	                                  shuffle=True)
 
-	if "steps_per_val_epoch" in config["data"]:
-		val_dataloader = get_dataloader(config["data"]["val_image_path"],
-		                                config["data"]["val_label_path"],
-		                                config["patch_shape"],
-		                                config["data"]["batch_size"],
-		                                num_samples=int(config["data"]["steps_per_val_epoch"]))
-	else:
-		val_dataloader = get_dataloader(config["data"]["val_image_path"],
-		                                config["data"]["val_label_path"],
-		                                config["patch_shape"],
-		                                config["data"]["batch_size"])
+	val_dataloader = get_dataloader(config["data"]["val_image_path"],
+	                                config["data"]["val_label_path"],
+	                                config["patch_shape"],
+	                                config["data"]["batch_size"],
+	                                shuffle=not "steps_per_val_epoch" in config["data"])
+
+	steps_per_train_epoch = config["data"]["steps_per_train_epoch"] \
+		if "steps_per_train_epoch" in config["data"] else None
+	steps_per_val_epoch = config["data"]["steps_per_val_epoch"] \
+		if "steps_per_val_epoch" in config["data"] else None
 
 	trainer = Trainer(experiment_name, model, device,
 	                  optimizer, train_dataloader, val_dataloader,
 	                  int(config["num_epochs"]),
-	                  working_folder)
+	                  working_folder,
+	                  steps_per_train_epoch,
+	                  steps_per_val_epoch)
 
 	trainer.train()
 

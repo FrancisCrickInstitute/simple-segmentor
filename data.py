@@ -6,13 +6,9 @@ from torch.utils import data
 from skimage.io import imread
 
 
-def get_dataloader(image_path, label_path, patch_shape, batch_size, num_samples=None):
+def get_dataloader(image_path, label_path, patch_shape, batch_size, shuffle):
 	dataset = SequentialDataset(image_path, label_path, patch_shape)
-	if num_samples is None:
-		return data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4)
-	else:
-		sampler = data.RandomSampler(dataset, replacement=True, num_samples=num_samples * batch_size)
-		return data.DataLoader(dataset, sampler=sampler, batch_size=batch_size, shuffle=False, num_workers=4)
+	return data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=4)
 
 
 class Sampler:
