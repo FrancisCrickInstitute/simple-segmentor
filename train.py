@@ -176,7 +176,7 @@ class Trainer:
             gpu_time = 0
 
             print(f'Epoch {self.epoch}/{self.n_epochs}')
-            for i, (x_batch, y_batch) in self.train_dataloader:
+            for i, (x_batch, y_batch) in enumerate(self.train_dataloader):
                 if self.steps_per_train_epoch is not None and i >= self.steps_per_train_epoch:
                     break
                 loop_iter_start_time = time.time()

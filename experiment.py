@@ -55,7 +55,7 @@ def run_experiment(config_filepath):
 
 	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 	if config["model"]["type"] == "HUNet":
-		model = HUNet(patch_shape[0], config["model"]["start_iblock_channels"])
+		model = HUNet(patch_shape[0], config["model"]["start_iblock_channels"]).to(device)
 	elif config["model"]["type"] == "UNet":
 		model = UNet(patch_shape[0], patch_shape[0],
 		                      start_iblock_channels=config["model"]["start_iblock_channels"],
