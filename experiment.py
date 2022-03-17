@@ -42,10 +42,10 @@ def run_experiment(config_filepath):
     working_folder = os.path.join("experiments", experiment_name)
 
     if not os.path.isdir(working_folder):
-        os.mkdir(working_folder)
-        os.mkdir(os.path.join(working_folder, 'model'))
+        os.makedirs(working_folder)
+        os.makedirs(os.path.join(working_folder, 'model'))
     elif not os.path.isdir(os.path.join(working_folder, 'model')):
-        os.mkdir(os.path.join(working_folder, 'model'))
+        os.makedirs(os.path.join(working_folder, 'model'))
 
     shutil.copy(config_filepath, os.path.join(working_folder, config_filepath))
 
@@ -69,26 +69,17 @@ def run_experiment(config_filepath):
     train_dataloader = get_dataloader(config["data"]["train_image_path"],
                                       config["data"]["train_label_path"],
                                       config["patch_shape"],
-                                      config["data"]["batch_size"],
-                                      shuffle=True)
+                                      config["data"]["batch_size"])
 
     val_dataloader = get_dataloader(config["data"]["val_image_path"],
                                     config["data"]["val_label_path"],
                                     config["patch_shape"],
-                                    config["data"]["batch_size"],
-                                    shuffle=not "steps_per_val_epoch" in config["data"])
-
-    steps_per_train_epoch = int(config["data"]["steps_per_train_epoch"]) \
-        if "steps_per_train_epoch" in config["data"] else None
-    steps_per_val_epoch = int(config["data"]["steps_per_val_epoch"]) \
-        if "steps_per_val_epoch" in config["data"] else None
+                                    config["data"]["batch_size"])
 
     trainer = Trainer(experiment_name, model, device,
                       optimizer, train_dataloader, val_dataloader,
                       int(config["num_epochs"]),
-                      working_folder,
-                      steps_per_train_epoch,
-                      steps_per_val_epoch)
+                      working_folder)
 
     trainer.train()
 

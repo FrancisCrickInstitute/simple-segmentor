@@ -1,31 +1,35 @@
-import numpy as np
-import torch
 import os
 import time
-
-from tqdm import tqdm
 from datetime import datetime
 
+import torch
+from tqdm import tqdm
+
 # Add validation at the end of each epoch
+
 
 def recall(pred, y):
     tp = torch.sum(torch.logical_and(pred, y))
     fn = torch.sum(torch.logical_and(pred == 0, y == 1))
     return float(tp/(tp + fn))
 
+
 def precision(pred, y):
     tp = torch.sum(torch.logical_and(pred, y))
     fp = torch.sum(torch.logical_and(pred == 1, y == 0))
     return float(tp/(tp + fp))
+
 
 def iou(pred, y):
     intersection = torch.sum(pred * y)
     union = torch.sum(torch.logical_or(pred, y))
     return intersection / union
 
+
 def dice(pred, y, smooth=0):
     intersection = torch.sum(pred * y)
     return (2 * intersection + smooth) / (torch.sum(pred) + torch.sum(y) + smooth)
+
 
 def dice_loss(pred, y, smooth=1):
     return 1 - dice(pred, y, smooth=smooth)
@@ -33,7 +37,7 @@ def dice_loss(pred, y, smooth=1):
 
 class Trainer:
     def __init__(self, name, model, device, optimizer, train_dataloader,
-                 val_dataloader, n_epochs, working_folder, steps_per_train_epoch, steps_per_val_epoch):
+                 val_dataloader, n_epochs, working_folder):
         self.bce = torch.nn.BCELoss()
 
         self.epoch = 0
@@ -50,8 +54,6 @@ class Trainer:
         self.val_dataloader = val_dataloader
         self.n_epochs = n_epochs
         self.working_folder = working_folder
-        self.steps_per_train_epoch = steps_per_train_epoch
-        self.steps_per_val_epoch = steps_per_val_epoch
 
         self.log_file = os.path.join(self.working_folder, self.name + '.log')
         with open(self.log_file, 'w+') as f:
@@ -165,19 +167,17 @@ class Trainer:
         print(f"Training dataset:\t{len(self.train_dataloader.dataset)} patches")
         print(f"Validation dataset:\t{len(self.val_dataloader.dataset)} patches")
         print(f"=> Training...")
-        for self.epoch in range(self.epoch + 1, self.epoch + self.n_epochs + 1):
+        for self.epoch in range(1, self.n_epochs + 1):
             train_running_loss = 0
             cpu_time = 0
             gpu_time = 0
 
-            for i, (x_batch, y_batch) in enumerate(self.train_dataloader):
-                if self.steps_per_train_epoch is not None and i >= self.steps_per_train_epoch:
-                    break
+            print(f'Epoch {self.epoch}/{self.n_epochs}')
+            for i, (x_batch, y_batch) in tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader)):
                 loop_iter_start_time = time.time()
 
                 x_batch = x_batch.type(torch.int)
                 y_batch = y_batch.type(torch.int)
-
 
                 x_batch, y_batch = self.normalize_func2d(x_batch, y_batch)
 
@@ -205,9 +205,7 @@ class Trainer:
             val_running_loss = 0
             val_start_time = time.time()
             with torch.no_grad():
-                for i, (x_batch, y_batch) in enumerate(self.val_dataloader):
-                    if self.steps_per_val_epoch is not None and i >= self.steps_per_val_epoch:
-                        break
+                for i, (x_batch, y_batch) in tqdm(enumerate(self.val_dataloader), total=len(self.val_dataloader)):
                     x_batch = x_batch.type(torch.int)
                     y_batch = y_batch.type(torch.int)
 
@@ -222,15 +220,8 @@ class Trainer:
 
             val_time = time.time() - val_start_time
 
-            if self.steps_per_train_epoch is None:
-                train_avg_loss = train_running_loss / len(self.train_dataloader)
-            else:
-                train_avg_loss = train_running_loss / self.steps_per_train_epoch
-
-            if self.steps_per_val_epoch is None:
-                val_avg_loss = val_running_loss / len(self.val_dataloader)
-            else:
-                val_avg_loss = val_running_loss / self.steps_per_val_epoch
+            train_avg_loss = train_running_loss / len(self.train_dataloader)
+            val_avg_loss = val_running_loss / len(self.val_dataloader)
             self.save_model_checkpoint(train_avg_loss, val_avg_loss)
             self.append_to_log(train_avg_loss, val_avg_loss, cpu_time, gpu_time, val_time)
 
