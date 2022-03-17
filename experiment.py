@@ -11,25 +11,25 @@ from data import get_dataloader
 
 """
 Config:
-	- num_epochs
-	- patch shape (tuple)
-	- working_folder
-	- patch_shape (tuple)
-	- model
-		- type (UNet / UNetInception)
-		- start_iblock_channels
-		- num_down_blocks
-		- layers_per_block
-	- optimizer
-		- lr
-	- data
-		- train_image_path
-		- train_label_path
-		- val_image_path
-		- val_label_path
-		- batch_size
-		- steps_per_train_epoch
-		- steps_per_val_epoch
+    - num_epochs
+    - patch shape (tuple)
+    - working_folder
+    - patch_shape (tuple)
+    - model
+        - type (UNet / UNetInception)
+        - start_iblock_channels
+        - num_down_blocks
+        - layers_per_block
+    - optimizer
+        - lr
+    - data
+        - train_image_path
+        - train_label_path
+        - val_image_path
+        - val_label_path
+        - batch_size
+        - steps_per_train_epoch
+        - steps_per_val_epoch
 """
 
 
@@ -96,7 +96,7 @@ def run_experiment(config_filepath):
 
 
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser()
-	parser.add_argument('--config', type=str, help='config filepath')
-	args = parser.parse_args()
-	run_experiment(args.config)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, help='config filepath')
+    args = parser.parse_args()
+    run_experiment(args.config)
