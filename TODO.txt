@@ -1,7 +1,3 @@
-Reload best epoch at the end (early stopping) and make a summary file of the epoch
-    - Re run over the entire training and validation stacks, printing:
-    - Best epoch
-    - IoU, DICE, precision, recall
-    - Time (GPU, CPU and validation)
+Benchmark against HUNet
 
-Benchmark against HUNet model
+Save the segmentation when finished training
