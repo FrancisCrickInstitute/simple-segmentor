@@ -84,6 +84,9 @@ class Trainer:
             f.write(f'{self.epoch},{train_loss:.4f},{val_loss:.4f},{cpu_time:.2f}s,{gpu_time:.2f}s,{val_time:.2f}s'
                     f',{datetime.now()}\n')
 
+    def segment_stack(self):
+        raise NotImplementedError  # TODO
+
     def evaluate(self, dataloader):
         with torch.no_grad():
             total_dice = 0
