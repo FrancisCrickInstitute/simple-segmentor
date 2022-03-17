@@ -78,19 +78,12 @@ def run_experiment(config_filepath):
 	                                config["data"]["val_label_path"],
 	                                config["patch_shape"],
 	                                config["data"]["batch_size"],
-	                                shuffle=not "steps_per_val_epoch" in config["data"])
-
-	steps_per_train_epoch = int(config["data"]["steps_per_train_epoch"]) \
-		if "steps_per_train_epoch" in config["data"] else None
-	steps_per_val_epoch = int(config["data"]["steps_per_val_epoch"]) \
-		if "steps_per_val_epoch" in config["data"] else None
+	                                shuffle=False)
 
 	trainer = Trainer(experiment_name, model, device,
 	                  optimizer, train_dataloader, val_dataloader,
 	                  int(config["num_epochs"]),
-	                  working_folder,
-	                  steps_per_train_epoch,
-	                  steps_per_val_epoch)
+	                  working_folder,)
 
 	trainer.train()
 

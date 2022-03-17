@@ -37,8 +37,7 @@ def dice_loss(pred, y, smooth=1):
 
 class Trainer:
     def __init__(self, name, model, device, optimizer, train_dataloader,
-                 val_dataloader, n_epochs, working_folder,
-                 steps_per_train_epoch=None, steps_per_val_epoch=None):
+                 val_dataloader, n_epochs, working_folder):
         self.bce = torch.nn.BCELoss()
 
         self.epoch = 0
@@ -46,8 +45,6 @@ class Trainer:
         self.total_gpu_time = 0
         self.collected_loss = []
         self.best_epoch = {'epoch': 0, 'train_loss': float('inf'), 'val_loss': float('inf')}
-        self.steps_per_train_epoch = steps_per_train_epoch
-        self.steps_per_val_epoch = steps_per_val_epoch
 
         self.name = name
         self.model = model
@@ -177,8 +174,6 @@ class Trainer:
 
             print(f'Epoch {self.epoch}/{self.n_epochs}')
             for i, (x_batch, y_batch) in enumerate(self.train_dataloader):
-                if self.steps_per_train_epoch is not None and i >= self.steps_per_train_epoch:
-                    break
                 loop_iter_start_time = time.time()
 
                 x_batch = x_batch.type(torch.int)
@@ -211,8 +206,6 @@ class Trainer:
             val_start_time = time.time()
             with torch.no_grad():
                 for i, (x_batch, y_batch) in enumerate(self.val_dataloader):
-                    if self.steps_per_val_epoch is not None and i >= self.steps_per_val_epoch:
-                        break
                     x_batch = x_batch.type(torch.int)
                     y_batch = y_batch.type(torch.int)
 
