@@ -106,7 +106,7 @@ class Trainer:
             for y in range(0, padded_volume.shape[1] - patch_shape[1], patch_shape[1])
             for x in range(0, padded_volume.shape[2] - patch_shape[2], patch_shape[2])
         ]
-        result_volume = np.zeros_like(padded_volume, dtype=torch.float16)
+        result_volume = np.zeros_like(padded_volume, dtype=np.float16)
 
         batch_size = 12
         for batch_start in range(0, len(grid_coordinates), batch_size):
