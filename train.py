@@ -92,8 +92,9 @@ class Trainer:
             f.write(f'{self.epoch},{train_loss:.4f},{val_loss:.4f},{cpu_time:.2f}s,{gpu_time:.2f}s,{val_time:.2f}s'
                     f',{datetime.now()}\n')
 
-    def segment_stack(self, image_stack, patch_shape):
+    def segment_stack(self, image_stack, patch_shape, total_cpu_time):
         self.model.eval()
+        cpu_start_time = time.time()
 
         padded_volume = np.pad(
             image_stack,
@@ -111,10 +112,13 @@ class Trainer:
             for y in range(0, padded_volume.shape[1] - patch_shape[1], patch_shape[1])
             for x in range(0, padded_volume.shape[2] - patch_shape[2], patch_shape[2])
         ]
-        result_volume = np.zeros_like(padded_volume, dtype=np.float16)
+        result_volume = np.zeros_like(padded_volume, dtype=np.float32)
 
         batch_size = 12
+        total_cpu_time += time.time() - cpu_start_time
+        total_gpu_time = 0
         for batch_start in range(0, len(grid_coordinates), batch_size):
+            cpu_start_time = time.time()
             batch_corner_coords = grid_coordinates[batch_start:batch_start + batch_size]
             true_batch_size = len(batch_corner_coords)
             image_patches = np.zeros((true_batch_size, *patch_shape))
@@ -127,8 +131,11 @@ class Trainer:
                 image_patches[i, :, :, :] = image_patch
 
             image_patches = torch.from_numpy(image_patches.astype(np.float32)).to(self.device)
+            gpu_start_time = time.time()
             with torch.no_grad():
                 predictions = self.model(image_patches).cpu().detach().numpy()
+            gpu_time = time.time() - gpu_start_time
+            total_gpu_time += gpu_time
 
             for i, corner_coord in enumerate(batch_corner_coords):
                 result_volume[
@@ -136,13 +143,14 @@ class Trainer:
                     corner_coord[1]:corner_coord[1] + patch_shape[1],
                     corner_coord[2]:corner_coord[2] + patch_shape[2],
                 ] = predictions[i]
+            total_cpu_time += time.time() - cpu_start_time - gpu_time
 
         result_volume = result_volume[
             patch_shape[0]:-patch_shape[0],
             patch_shape[1]:-patch_shape[1],
             patch_shape[2]:-patch_shape[2],
         ]
-        return result_volume
+        return result_volume, total_cpu_time, total_gpu_time
 
     def _segment_stack(self, image_stack, overlap_divider=4):
         patch_shape = self.train_dataloader.dataset.patch_shape
@@ -165,7 +173,7 @@ class Trainer:
             for y in range(0, padded_volume.shape[1] - patch_shape[1], patch_shape[1] - (overlap_xy*2))
             for x in range(0, padded_volume.shape[2] - patch_shape[2], patch_shape[2] - (overlap_xy*2))
         ]
-        result_volume = np.zeros_like(padded_volume, dtype=torch.float16)
+        result_volume = np.zeros_like(padded_volume, dtype=torch.float32)
 
         batch_size = 12
         for batch_start in range(0, len(grid_coordinates), batch_size):
@@ -203,26 +211,28 @@ class Trainer:
         return result_volume
 
     def evaluate(self, image_stack, label_stack, patch_shape, results_path):
+        cpu_start_time = time.time()
         image_stack, label_stack = self.normalize_func2d(image_stack, label_stack)
-        segmented_stack = self.segment_stack(image_stack, patch_shape)
-        print("Original shape:", image_stack.shape)
-        print("Segmented shape:", segmented_stack.shape)
-        print()
+        total_cpu_time = time.time() - cpu_start_time
+        segmented_stack, total_cpu_time, total_gpu_time = self.segment_stack(image_stack, patch_shape, total_cpu_time)
+
+        cpu_start_time = time.time()
         prec = precision(segmented_stack, label_stack)
         rec = recall(segmented_stack, label_stack)
         _dice = np_dice(segmented_stack, label_stack)
         _iou = iou(segmented_stack, label_stack)
 
-        segmented_stack = segmented_stack
         imsave(results_path, segmented_stack)
+
+        total_cpu_time += time.time() - cpu_start_time
 
         return {
             "DICE": _dice,
-            "IoU": iou,
+            "IoU": _iou,
             "Precision": prec,
             "Recall": rec,
-            "GPU time": 0,
-            "CPU time": 0
+            "GPU time": total_gpu_time,
+            "CPU time": total_cpu_time
         }
 
 
