@@ -188,7 +188,7 @@ class Trainer:
         best_epoch = 0
         for file in files:
             filename, ext = os.path.splitext(file)
-            if filename.startswith(f'{self.name}.best.') and ext == 'pt':
+            if filename.startswith(f'{self.name}.best.') and (ext == 'pt' or ext == '.pt'):
                 self.model.load_state_dict(torch.load(os.path.join(model_save_folder, file)))
                 best_epoch = int(filename.split(".")[-1])
                 break
