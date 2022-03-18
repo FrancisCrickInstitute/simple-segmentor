@@ -156,8 +156,8 @@ class Trainer:
         cpu_start_time = time.time()
 	
         # To combat underflow
-        image_stack = image_stack.astype(np.int)
-        label_stack = label_stack.astype(np.int)
+        image_stack = image_stack.astype(np.float16)
+        label_stack = label_stack.astype(np.float16)
 
         image_stack, label_stack = self.normalize_func2d(image_stack, label_stack)
         total_cpu_time = time.time() - cpu_start_time
