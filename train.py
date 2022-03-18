@@ -12,21 +12,26 @@ from skimage.io import imsave
 
 
 def recall(pred, y):
-    tp = torch.sum(torch.logical_and(pred, y))
-    fn = torch.sum(torch.logical_and(pred == 0, y == 1))
+    tp = np.sum(np.logical_and(pred, y))
+    fn = np.sum(np.logical_and(pred == 0, y == 1))
     return float(tp/(tp + fn))
 
 
 def precision(pred, y):
-    tp = torch.sum(torch.logical_and(pred, y))
-    fp = torch.sum(torch.logical_and(pred == 1, y == 0))
+    tp = np.sum(np.logical_and(pred, y))
+    fp = np.sum(np.logical_and(pred == 1, y == 0))
     return float(tp/(tp + fp))
 
 
 def iou(pred, y):
-    intersection = torch.sum(pred * y)
-    union = torch.sum(torch.logical_or(pred, y))
+    intersection = np.sum(pred * y)
+    union = np.sum(np.logical_or(pred, y))
     return intersection / union
+
+
+def np_dice(pred, y, smooth=0):
+    intersection = np.sum(pred * y)
+    return (2 * intersection + smooth) / (np.sum(pred) + np.sum(y) + smooth)
 
 
 def dice(pred, y, smooth=0):
@@ -205,7 +210,7 @@ class Trainer:
         print()
         prec = precision(segmented_stack, label_stack)
         rec = recall(segmented_stack, label_stack)
-        _dice = dice(segmented_stack, label_stack)
+        _dice = np_dice(segmented_stack, label_stack)
         _iou = iou(segmented_stack, label_stack)
 
         segmented_stack = segmented_stack
