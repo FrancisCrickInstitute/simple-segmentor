@@ -3,7 +3,9 @@ import time
 from datetime import datetime
 
 import torch
-from tqdm import tqdm
+from torch.nn import functional as F
+
+from skimage.io import imsave
 
 # Add validation at the end of each epoch
 
@@ -84,10 +86,123 @@ class Trainer:
             f.write(f'{self.epoch},{train_loss:.4f},{val_loss:.4f},{cpu_time:.2f}s,{gpu_time:.2f}s,{val_time:.2f}s'
                     f',{datetime.now()}\n')
 
-    def segment_stack(self):
-        raise NotImplementedError  # TODO
+    def segment_stack(self, image_stack, patch_shape):
+        self.model.eval()
 
-    def evaluate(self, dataloader):
+        grid_coordinates = [
+            (z, y, x)
+            for z in range(0, image_stack.shape[0] - patch_shape[0], patch_shape[0])
+            for y in range(0, image_stack.shape[1] - patch_shape[1], patch_shape[1])
+            for x in range(0, image_stack.shape[2] - patch_shape[2], patch_shape[2])
+        ]
+        result_volume = torch.zeros_like(image_stack, dtype=torch.float16)
+
+        batch_size = 12
+        for batch_start in range(0, len(grid_coordinates), batch_size):
+            batch_corner_coords = grid_coordinates[batch_start:batch_start + batch_size]
+            true_batch_size = len(batch_corner_coords)
+            image_patches = torch.zeros((true_batch_size, *patch_shape))
+            for i, corner_coord in enumerate(batch_corner_coords):
+                image_patch = image_stack[
+                    corner_coord[0]:corner_coord[0] + patch_shape[0],
+                    corner_coord[1]:corner_coord[1] + patch_shape[1],
+                    corner_coord[2]:corner_coord[2] + patch_shape[2],
+                ]
+                image_patches[i, :, :, :] = image_patch
+
+            image_patches = image_patches.to(torch.float32).to(self.device)
+            with torch.no_grad():
+                predictions = self.model(image_patches).cpu().detach()
+
+            for i, corner_coord in enumerate(batch_corner_coords):
+                result_volume[
+                    corner_coord[0]:corner_coord[0] + patch_shape[0],
+                    corner_coord[1]:corner_coord[1] + patch_shape[1],
+                    corner_coord[2]:corner_coord[2] + patch_shape[2],
+                ] = predictions[i]
+
+        return result_volume
+
+    def _segment_stack(self, image_stack, overlap_divider=4):
+        patch_shape = self.train_dataloader.dataset.patch_shape
+
+        self.model.eval()
+        overlap_xy = patch_shape[1] // overlap_divider
+        overlap_z = patch_shape[0] // overlap_divider
+
+        padded_volume = F.pad(image_stack,
+                              (
+                                  overlap_xy + patch_shape[2], overlap_xy + patch_shape[2],
+                                  overlap_xy + patch_shape[1], overlap_xy + patch_shape[1],
+                                  overlap_z + patch_shape[0], overlap_z + patch_shape[0]
+                              ),
+                              'reflect')
+
+        grid_coordinates = [
+            (z, y, x)
+            for z in range(0, padded_volume.shape[0] - patch_shape[0], patch_shape[0] - (overlap_z*2))
+            for y in range(0, padded_volume.shape[1] - patch_shape[1], patch_shape[1] - (overlap_xy*2))
+            for x in range(0, padded_volume.shape[2] - patch_shape[2], patch_shape[2] - (overlap_xy*2))
+        ]
+        result_volume = torch.zeros_like(padded_volume, dtype=torch.float16)
+
+        batch_size = 12
+        for batch_start in range(0, len(grid_coordinates), batch_size):
+            batch_corner_coords = grid_coordinates[batch_start:batch_start + batch_size]
+            true_batch_size = len(batch_corner_coords)
+
+            image_patches = torch.zeros((true_batch_size, *patch_shape))
+            for i, corner_coord in enumerate(batch_corner_coords):
+                image_patch = padded_volume[
+                    corner_coord[0]:corner_coord[0] + patch_shape[0],
+                    corner_coord[1]:corner_coord[1] + patch_shape[1],
+                    corner_coord[2]:corner_coord[2] + patch_shape[2],
+                ]
+                image_patches[i, :, :, :] = image_patch
+            image_patches = image_patches.to(torch.float32).to(self.device)
+            with torch.no_grad():
+                predictions = self.model(image_patches).cpu().detach()
+
+            for i, corner_coord in enumerate(batch_corner_coords):
+                cropped_image_patch = predictions[i,
+                    overlap_z:-overlap_z,
+                    overlap_xy:-overlap_xy,
+                    overlap_xy:-overlap_xy]
+                result_volume[
+                    corner_coord[0] + overlap_z:corner_coord[0] + patch_shape[0] - overlap_z,
+                    corner_coord[1] + overlap_xy:corner_coord[1] + patch_shape[1] - overlap_xy,
+                    corner_coord[2] + overlap_xy:corner_coord[2] + patch_shape[2] - overlap_xy,
+                ] = cropped_image_patch
+
+        result_volume = result_volume[
+            overlap_z + patch_shape[0]:-(overlap_z+patch_shape[0]),
+            overlap_xy + patch_shape[1]:-(overlap_xy+patch_shape[1]),
+            overlap_xy + patch_shape[2]:-(overlap_xy + patch_shape[2])
+        ]
+        return result_volume
+
+    def evaluate(self, image_stack, label_stack, patch_shape, results_path):
+        image_stack, label_stack = self.normalize_func2d(image_stack, label_stack)
+        segmented_stack = self.segment_stack(image_stack, patch_shape)
+        prec = precision(segmented_stack, label_stack)
+        rec = recall(segmented_stack, label_stack)
+        _dice = dice(segmented_stack, label_stack)
+        _iou = iou(segmented_stack, label_stack)
+
+        segmented_stack = segmented_stack.numpy()
+        imsave(results_path, segmented_stack)
+
+        return {
+            "DICE": _dice,
+            "IoU": iou,
+            "Precision": prec,
+            "Recall": rec,
+            "GPU time": 0,
+            "CPU time": 0
+        }
+
+
+    def _evaluate(self, dataloader):
         with torch.no_grad():
             total_dice = 0
             total_iou = 0
@@ -143,10 +258,19 @@ class Trainer:
                 best_epoch = int(filename.split(".")[-1])
                 break
 
-        train_metrics = self.evaluate(self.train_dataloader)
-        val_metrics = self.evaluate(self.val_dataloader)
+        if not os.path.isdir(os.path.join(self.working_folder, "results")):
+            os.mkdir(os.path.join(self.working_folder, "results"))
 
-        results_file = os.path.join(self.working_folder, self.name + '.results')
+        train_metrics = self.evaluate(self.train_dataloader.dataset.image_stack,
+                                      self.train_dataloader.dataset.label_stack,
+                                      self.train_dataloader.dataset.patch_shape,
+                                      os.path.join(self.working_folder, "results", self.train_dataloader.dataset.image_name))
+        val_metrics = self.evaluate(self.val_dataloader.dataset.image_stack,
+                                    self.val_dataloader.dataset.label_stack,
+                                    self.val_dataloader.dataset.patch_shape,
+                                    os.path.join(self.working_folder, "results", self.val_dataloader.dataset.image_name))
+
+        results_file = os.path.join(self.working_folder, "results", self.name + '.results')
         with open(results_file, "w+") as f:
             f.write(f"Best epoch: {best_epoch + 1}\n\n")
 

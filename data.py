@@ -1,5 +1,4 @@
-import random
-import numpy as np
+import os
 
 from torch.utils import data
 
@@ -16,6 +15,9 @@ class SequentialDataset(data.Dataset):
         self.image_path = image_path
         self.label_path = label_path
         self.patch_shape = patch_shape
+
+        self.image_name = os.path.basename(image_path)
+        self.label_name = os.path.basename(label_path)
 
         self.image_stack = imread(image_path)
         self.label_stack = imread(label_path)
