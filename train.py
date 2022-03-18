@@ -207,6 +207,8 @@ class Trainer:
 
         results_file = os.path.join(self.working_folder, "results", self.name + '.results')
         with open(results_file, "w+") as f:
+            f.write(f"Total training cpu time: {self.total_cpu_time}\n")
+            f.write(f"Total training gpu time: {self.total_gpu_time}\n")
             f.write(f"Best epoch: {best_epoch + 1}\n\n")
 
             f.write("Best epoch training set results:\n")

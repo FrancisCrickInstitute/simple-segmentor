@@ -1,3 +1,0 @@
-Benchmark against HUNet
-
-Save the segmentation when finished training
