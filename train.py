@@ -152,64 +152,6 @@ class Trainer:
         ]
         return result_volume, total_cpu_time, total_gpu_time
 
-    def _segment_stack(self, image_stack, overlap_divider=4):
-        patch_shape = self.train_dataloader.dataset.patch_shape
-
-        self.model.eval()
-        overlap_xy = patch_shape[1] // overlap_divider
-        overlap_z = patch_shape[0] // overlap_divider
-
-        padded_volume = F.pad(image_stack,
-                              (
-                                  overlap_xy + patch_shape[2], overlap_xy + patch_shape[2],
-                                  overlap_xy + patch_shape[1], overlap_xy + patch_shape[1],
-                                  overlap_z + patch_shape[0], overlap_z + patch_shape[0]
-                              ),
-                              'reflect')
-
-        grid_coordinates = [
-            (z, y, x)
-            for z in range(0, padded_volume.shape[0] - patch_shape[0], patch_shape[0] - (overlap_z*2))
-            for y in range(0, padded_volume.shape[1] - patch_shape[1], patch_shape[1] - (overlap_xy*2))
-            for x in range(0, padded_volume.shape[2] - patch_shape[2], patch_shape[2] - (overlap_xy*2))
-        ]
-        result_volume = np.zeros_like(padded_volume, dtype=torch.float32)
-
-        batch_size = 12
-        for batch_start in range(0, len(grid_coordinates), batch_size):
-            batch_corner_coords = grid_coordinates[batch_start:batch_start + batch_size]
-            true_batch_size = len(batch_corner_coords)
-
-            image_patches = torch.zeros((true_batch_size, *patch_shape))
-            for i, corner_coord in enumerate(batch_corner_coords):
-                image_patch = padded_volume[
-                    corner_coord[0]:corner_coord[0] + patch_shape[0],
-                    corner_coord[1]:corner_coord[1] + patch_shape[1],
-                    corner_coord[2]:corner_coord[2] + patch_shape[2],
-                ]
-                image_patches[i, :, :, :] = image_patch
-            image_patches = image_patches.to(torch.float32).to(self.device)
-            with torch.no_grad():
-                predictions = self.model(image_patches).cpu().detach()
-
-            for i, corner_coord in enumerate(batch_corner_coords):
-                cropped_image_patch = predictions[i,
-                    overlap_z:-overlap_z,
-                    overlap_xy:-overlap_xy,
-                    overlap_xy:-overlap_xy]
-                result_volume[
-                    corner_coord[0] + overlap_z:corner_coord[0] + patch_shape[0] - overlap_z,
-                    corner_coord[1] + overlap_xy:corner_coord[1] + patch_shape[1] - overlap_xy,
-                    corner_coord[2] + overlap_xy:corner_coord[2] + patch_shape[2] - overlap_xy,
-                ] = cropped_image_patch
-
-        result_volume = result_volume[
-            overlap_z + patch_shape[0]:-(overlap_z+patch_shape[0]),
-            overlap_xy + patch_shape[1]:-(overlap_xy+patch_shape[1]),
-            overlap_xy + patch_shape[2]:-(overlap_xy + patch_shape[2])
-        ]
-        return result_volume
-
     def evaluate(self, image_stack, label_stack, patch_shape, results_path):
         cpu_start_time = time.time()
         image_stack, label_stack = self.normalize_func2d(image_stack, label_stack)
@@ -234,52 +176,6 @@ class Trainer:
             "GPU time": total_gpu_time,
             "CPU time": total_cpu_time
         }
-
-
-    def _evaluate(self, dataloader):
-        with torch.no_grad():
-            total_dice = 0
-            total_iou = 0
-            total_precision = 0
-            total_recall = 0
-            total_cpu_time = 0
-            total_gpu_time = 0
-            for x_batch, y_batch in dataloader:
-                cpu_start_time = time.time()
-
-                x_batch, y_batch = x_batch.type(torch.int), y_batch.type(torch.int)
-                x_batch, y_batch = self.normalize_func2d(x_batch, y_batch)
-                cpu_done_time = time.time()
-
-                x_batch = x_batch.to(self.device)
-                y_batch = y_batch.to(self.device)
-
-                y_pred = self.model(x_batch)
-                total_dice += dice(y_pred, y_batch)
-
-                y_pred = y_pred > 0.5
-                y_batch = y_batch > 0.5
-
-                total_iou += iou(y_pred, y_batch)
-                total_precision += precision(y_pred, y_batch)
-                total_recall += recall(y_pred, y_batch)
-
-                total_cpu_time += cpu_done_time - cpu_start_time
-                total_gpu_time += time.time() - cpu_done_time
-
-            avg_dice = total_dice / len(dataloader)
-            avg_iou = total_iou / len(dataloader)
-            avg_precision = total_precision / len(dataloader)
-            avg_recall = total_recall / len(dataloader)
-
-            return {
-                "DICE": avg_dice,
-                "IoU": avg_iou,
-                "Precision": avg_precision,
-                "Recall": avg_recall,
-                "GPU time": total_gpu_time,
-                "CPU time": total_cpu_time
-            }
 
     def save_best_epoch(self):
         model_save_folder = os.path.join(self.working_folder, 'model')
