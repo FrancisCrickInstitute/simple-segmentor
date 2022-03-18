@@ -1,6 +1,7 @@
 import os
 import time
 from datetime import datetime
+import numpy as np
 
 import torch
 from torch.nn import functional as F
@@ -89,30 +90,40 @@ class Trainer:
     def segment_stack(self, image_stack, patch_shape):
         self.model.eval()
 
+        padded_volume = np.pad(
+            image_stack,
+            (
+                (patch_shape[0], patch_shape[0]),
+                (patch_shape[1], patch_shape[1]),
+                (patch_shape[2], patch_shape[2]),
+            ),
+            'symmetric'
+        )
+
         grid_coordinates = [
             (z, y, x)
-            for z in range(0, image_stack.shape[0] - patch_shape[0], patch_shape[0])
-            for y in range(0, image_stack.shape[1] - patch_shape[1], patch_shape[1])
-            for x in range(0, image_stack.shape[2] - patch_shape[2], patch_shape[2])
+            for z in range(0, padded_volume.shape[0] - patch_shape[0], patch_shape[0])
+            for y in range(0, padded_volume.shape[1] - patch_shape[1], patch_shape[1])
+            for x in range(0, padded_volume.shape[2] - patch_shape[2], patch_shape[2])
         ]
-        result_volume = torch.zeros_like(image_stack, dtype=torch.float16)
+        result_volume = np.zeros_like(padded_volume, dtype=torch.float16)
 
         batch_size = 12
         for batch_start in range(0, len(grid_coordinates), batch_size):
             batch_corner_coords = grid_coordinates[batch_start:batch_start + batch_size]
             true_batch_size = len(batch_corner_coords)
-            image_patches = torch.zeros((true_batch_size, *patch_shape))
+            image_patches = np.zeros((true_batch_size, *patch_shape))
             for i, corner_coord in enumerate(batch_corner_coords):
-                image_patch = image_stack[
+                image_patch = padded_volume[
                     corner_coord[0]:corner_coord[0] + patch_shape[0],
                     corner_coord[1]:corner_coord[1] + patch_shape[1],
                     corner_coord[2]:corner_coord[2] + patch_shape[2],
                 ]
                 image_patches[i, :, :, :] = image_patch
 
-            image_patches = image_patches.to(torch.float32).to(self.device)
+            image_patches = torch.from_numpy(image_patches.astype(np.float32)).to(self.device)
             with torch.no_grad():
-                predictions = self.model(image_patches).cpu().detach()
+                predictions = self.model(image_patches).cpu().detach().numpy()
 
             for i, corner_coord in enumerate(batch_corner_coords):
                 result_volume[
@@ -121,6 +132,11 @@ class Trainer:
                     corner_coord[2]:corner_coord[2] + patch_shape[2],
                 ] = predictions[i]
 
+        result_volume = result_volume[
+            patch_shape[0]:-patch_shape[0],
+            patch_shape[1]:-patch_shape[1],
+            patch_shape[2]:-patch_shape[2],
+        ]
         return result_volume
 
     def _segment_stack(self, image_stack, overlap_divider=4):
@@ -144,7 +160,7 @@ class Trainer:
             for y in range(0, padded_volume.shape[1] - patch_shape[1], patch_shape[1] - (overlap_xy*2))
             for x in range(0, padded_volume.shape[2] - patch_shape[2], patch_shape[2] - (overlap_xy*2))
         ]
-        result_volume = torch.zeros_like(padded_volume, dtype=torch.float16)
+        result_volume = np.zeros_like(padded_volume, dtype=torch.float16)
 
         batch_size = 12
         for batch_start in range(0, len(grid_coordinates), batch_size):
@@ -184,12 +200,15 @@ class Trainer:
     def evaluate(self, image_stack, label_stack, patch_shape, results_path):
         image_stack, label_stack = self.normalize_func2d(image_stack, label_stack)
         segmented_stack = self.segment_stack(image_stack, patch_shape)
+        print("Original shape:", image_stack.shape)
+        print("Segmented shape:", segmented_stack.shape)
+        print()
         prec = precision(segmented_stack, label_stack)
         rec = recall(segmented_stack, label_stack)
         _dice = dice(segmented_stack, label_stack)
         _iou = iou(segmented_stack, label_stack)
 
-        segmented_stack = segmented_stack.numpy()
+        segmented_stack = segmented_stack
         imsave(results_path, segmented_stack)
 
         return {
