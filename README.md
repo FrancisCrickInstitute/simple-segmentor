@@ -4,7 +4,7 @@
 e.g. `python experiment.py --config sequential.yml`  
 
 When training is complete a results file will be written with
-performance metrics and speed reports.
+performance metrics and speed reports. A full segmentation of both the training and validation sets will also be created.
 
 ### Data preparation
 Get the MitoEM-H images and labels from https://mitoem.grand-challenge.org/  
