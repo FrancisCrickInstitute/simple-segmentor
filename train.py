@@ -154,7 +154,7 @@ class Trainer:
 
     def evaluate(self, image_stack, label_stack, patch_shape, results_path):
         cpu_start_time = time.time()
-	
+
         # To combat underflow
         image_stack = image_stack.astype(np.float16)
         label_stack = label_stack.astype(np.float16)
@@ -163,11 +163,14 @@ class Trainer:
         total_cpu_time = time.time() - cpu_start_time
         segmented_stack, total_cpu_time, total_gpu_time = self.segment_stack(image_stack, patch_shape, total_cpu_time)
 
+        bin_predictions = segmented_stack > 0.5
+        bin_label = label_stack > 0.5
+
         cpu_start_time = time.time()
-        prec = precision(segmented_stack, label_stack)
-        rec = recall(segmented_stack, label_stack)
-        _dice = np_dice(segmented_stack, label_stack)
-        _iou = iou(segmented_stack, label_stack)
+        prec = precision(bin_predictions, bin_label)
+        rec = recall(bin_predictions, bin_label)
+        _dice = np_dice(bin_predictions, bin_label)
+        _iou = iou(bin_predictions, bin_label)
 
         imsave(results_path, segmented_stack)
 

@@ -6,7 +6,6 @@ import shutil
 
 from train import Trainer
 from models import UNet, UNetInception
-from hunet import HUNet
 from data import get_dataloader
 
 """
