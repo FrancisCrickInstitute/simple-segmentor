@@ -78,7 +78,7 @@ class Trainer:
             files = os.listdir(model_save_folder)
             for file in files:
                 filename, ext = os.path.splitext(file)
-                if filename.startswith(f'{self.name}.best.') and ext == 'pt':
+                if filename.startswith(f'{self.name}.best.') and ext == 'pt' or ext == '.pt':
                     os.remove(os.path.join(model_save_folder, file))
 
             best_model_fname = os.path.join(model_save_folder, f'{self.name}.best.{self.epoch}.pt')
