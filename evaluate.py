@@ -2,58 +2,25 @@ import os
 import yaml
 import torch
 import argparse
-import shutil
 
 from train import Trainer
 from models import UNet, UNetInception
 from data import get_dataloader
 
 """
-Config:
-    - num_epochs
-    - patch shape (tuple)
-    - working_folder
-    - patch_shape (tuple)
-    - model
-        - type (UNet / UNetInception)
-        - start_iblock_channels
-        - num_down_blocks
-        - layers_per_block
-    - optimizer
-        - lr
-    - data
-        - train_image_path
-        - train_label_path
-        - val_image_path
-        - val_label_path
-        - batch_size
-        - steps_per_train_epoch
-        - steps_per_val_epoch
+Note: this file assumes the experiment directory exists
 """
+def evaluate(experiment_directory):
+    experiment_name = os.path.basename(experiment_directory)
 
-
-def run_experiment(config_filepath):
-    if not os.path.exists(config_filepath):
-        print("Config filepath does not exist")
-        return
-    with open(config_filepath) as f:
+    config_path = os.path.join(experiment_directory, experiment_name + ".yml")
+    with open(config_path) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-    experiment_name, _ = os.path.splitext(os.path.basename(config_filepath))
-    working_folder = os.path.join("experiments", experiment_name)
-
-    if not os.path.isdir(working_folder):
-        os.mkdir(working_folder)
-        os.mkdir(os.path.join(working_folder, 'model'))
-    elif not os.path.isdir(os.path.join(working_folder, 'model')):
-        os.mkdir(os.path.join(working_folder, 'model'))
-
-    shutil.copy(config_filepath, os.path.join(working_folder, config_filepath))
 
     patch_shape = config["patch_shape"]
     patch_shape = (int(patch_shape[0]), int(patch_shape[1]), int(patch_shape[2]))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     if config["model"]["type"] == "UNet":
         model = UNet(patch_shape[0], patch_shape[0],
                      start_iblock_channels=config["model"]["start_iblock_channels"],
@@ -64,7 +31,6 @@ def run_experiment(config_filepath):
                               start_iblock_channels=config["model"]["start_iblock_channels"],
                               num_down_blocks=config["model"]["num_down_blocks"],
                               layers_per_block=config["model"]["layers_per_block"]).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=float(config["optimizer"]["lr"]))
 
     train_dataloader = get_dataloader(config["data"]["train_image_path"],
                                       config["data"]["train_label_path"],
@@ -77,17 +43,14 @@ def run_experiment(config_filepath):
                                     config["patch_shape"],
                                     config["data"]["batch_size"],
                                     shuffle=False)
-
     trainer = Trainer(experiment_name, model, device,
-                      optimizer, train_dataloader, val_dataloader,
+                      None, train_dataloader, val_dataloader,
                       int(config["num_epochs"]),
-                      working_folder,)
-
-    trainer.train()
-
+                      experiment_directory)
+    trainer.save_best_epoch()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, help='config filepath')
+    parser.add_argument('--experiment', type=str, help='experiment directory')
     args = parser.parse_args()
-    run_experiment(args.config)
+    evaluate(args.experiment)
